@@ -5,7 +5,8 @@ Uses Yahoo Finance via yfinance (free, no API key required)
 Fetches daily rates for all currencies vs INR, forward-fills missing dates,
 and loads everything into dw.dim_exchange_rate in PostgreSQL.
 
-Currencies covered (16 total):
+Currencies covered (17 total):
+    Base        : INR (rate = 1.0 for all dates)
     Americas    : USD, CAD, BRL, MXN
     Europe      : EUR, GBP, CHF, SEK
     Middle East : AED, SAR
@@ -18,7 +19,7 @@ Cross-rate via USD (no direct XXXINR=X ticker available):
     MXN, BRL, SAR, CNY → rate_to_inr = USD_to_INR / USD_per_XXX
 
 Install dependencies:
-    pip install yfinance pandas psycopg2-binary
+    pip install yfinance pandas psycopg2-binary python-dotenv
 """
 
 import os
@@ -39,7 +40,6 @@ DB_CONFIG = {
     "user":     os.getenv("DB_USER"),
     "password": os.getenv("DB_PASSWORD")
 }
-# ----------------------------
 
 START_DATE  = "2000-01-01"
 END_DATE    = datetime.today().strftime("%Y-%m-%d")
@@ -136,6 +136,22 @@ def fetch_cross_rate_currency(currency_code, usd_ticker, usd_inr_df):
         return None
 
 
+def generate_inr(start_date, end_date):
+    """
+    Generate INR rows with rate_to_inr = 1.0 for every calendar day
+    from START_DATE to END_DATE. INR is always 1 INR = 1 INR.
+    """
+    print("  Generating INR rows (rate = 1.0 for all dates)...")
+    full_range = pd.date_range(start=start_date, end=end_date, freq="D")
+    df = pd.DataFrame({
+        "rate_to_inr": 1.0,
+        "currency_code": "INR"
+    }, index=full_range)
+    df.index.name = "date"
+    print(f"  Generated {len(df)} INR rows from {start_date} to {end_date}.")
+    return df
+
+
 def forward_fill(df, currency_code):
     """Fill gaps (weekends, holidays) with the last known rate."""
     full_range = pd.date_range(start=df.index.min(), end=df.index.max(), freq="D")
@@ -152,7 +168,11 @@ def fetch_all_currencies():
     """Fetch and combine all currencies into a single DataFrame."""
     all_dfs = []
 
-    # Step 1: Fetch all direct ticker currencies
+    # Step 1: INR base currency — rate is always 1.0
+    print("\n--- Base Currency ---")
+    all_dfs.append(generate_inr(START_DATE, END_DATE))
+
+    # Step 2: Fetch all direct ticker currencies
     print("\n--- Direct Ticker Currencies ---")
     for currency_code, ticker_symbol in DIRECT_CURRENCIES.items():
         df = fetch_direct_currency(currency_code, ticker_symbol)
@@ -160,7 +180,7 @@ def fetch_all_currencies():
             df = forward_fill(df, currency_code)
             all_dfs.append(df)
 
-    # Step 2: Fetch USD/INR once, reuse for all cross-rate currencies
+    # Step 3: Fetch USD/INR once, reuse for all cross-rate currencies
     print("\n--- Cross-Rate Currencies (via USD) ---")
     usd_inr_df = fetch_usd_inr()
     for currency_code, usd_ticker in CROSS_RATE_CURRENCIES.items():
