@@ -228,7 +228,7 @@ def generate_customers(conn):
     all_customers = fetch_all(
         conn,
         """
-        SELECT customer_sk, customer_id, effective_start, effective_end
+        SELECT customer_sk, customer_id, effective_start, effective_end, country
         FROM dw.dim_customer
         """
     )
