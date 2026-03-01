@@ -91,7 +91,7 @@ def generate_orders(conn, customer_map):
         conn,
         """
         SELECT order_sk, customer_sk, date_sk,
-            order_created_at, currency_code
+            order_created_at, currency_code, order_status
         FROM dw.fact_orders
         """
     )

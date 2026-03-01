@@ -136,8 +136,8 @@ def resolve_customer_at_time(all_customers, target_dt):
 def resolve_product_at_time(all_products, target_dt):
     """
     Picks a random product version active at target_dt.
-    all_products rows: (product_id, product_sk, effective_start, effective_end)
-    Returns product_sk or None
+    all_products rows: (product_id, product_sk, effective_start, effective_end, category_name)
+    Returns (product_sk, category_name) or (None, None)
     """
     matches = [
         row for row in all_products
@@ -145,6 +145,6 @@ def resolve_product_at_time(all_products, target_dt):
         and (row[3] is None or row[3] > target_dt)
     ]
     if not matches:
-        return None
+        return None, None
     row = random.choice(matches)
-    return row[1]  # product_sk
+    return row[1], row[4]  # product_sk, category_name

@@ -172,8 +172,10 @@ def generate_products(conn, category_map):
     all_products = fetch_all(
         conn,
         """
-        SELECT product_id, product_sk, effective_start, effective_end
-        FROM dw.dim_product
+        SELECT dp.product_id, dp.product_sk, dp.effective_start, dp.effective_end,
+            dc.category_name
+        FROM dw.dim_product dp
+        JOIN dw.dim_category dc ON dc.category_sk = dp.category_s
         """
     )
 

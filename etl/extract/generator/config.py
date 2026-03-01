@@ -24,6 +24,12 @@ SCD2_CUST_RATE  = 0.05   # 5% of customers get a second version
 SCD2_PROD_RATE  = 0.20   # 20% of products get discontinued
 
 # ------------------------------------------------------------
+# Discount details
+# ------------------------------------------------------------
+DISCOUNT_TIERS = [0.0, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50]
+DISCOUNT_WEIGHTS = [0.30, 0.25, 0.20, 0.10, 0.07, 0.04, 0.02, 0.02]
+
+# ------------------------------------------------------------
 # Categories — (category_id, category_name, parent_id)
 # parent_id = None means it's a top-level category
 # ------------------------------------------------------------
