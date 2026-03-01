@@ -357,6 +357,29 @@ COUNTRY_WEIGHTS = {
     "Sweden":         0.01,
 }
 
+COUNTRY_MOBILE_CODE = {
+    "India":          "+91",
+    "United States":  "+1",
+    "United Kingdom": "+44",
+    "Germany":        "+49",
+    "France":         "+33",
+    "UAE":            "+971",
+    "Saudi Arabia":   "+966",
+    "Japan":          "+81",
+    "China":          "+86",
+    "Singapore":      "+65",
+    "Australia":      "+61",
+    "Canada":         "+1",
+    "Brazil":         "+55",
+    "Mexico":         "+52",
+    "Hong Kong":      "+852",
+    "South Korea":    "+82",
+    "Switzerland":    "+41",
+    "Sweden":         "+46",
+}
+
+MAIL_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "zohomail.com"]
+
 # ------------------------------------------------------------
 # Payment configuration
 # ------------------------------------------------------------

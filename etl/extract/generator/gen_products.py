@@ -3,7 +3,7 @@
 # Generates and inserts dim_product rows.
 # Pass 1: 1000 active products
 # Pass 2: 20% get discontinued via SCD2
-# Returns product_id_to_sk mapping (current versions only)
+# Return all product versions for SCD2 lookup in gen_orders.py
 # ============================================================
 
 import random
@@ -41,7 +41,7 @@ def generate_products(conn, category_map):
     Generates dim_product rows in two passes.
     Pass 1 — 1000 active products
     Pass 2 — 20% get discontinued via SCD2
-    Returns product_id_to_sk for current versions.
+    Returns all_products for current versions.
     """
 
     print("\n[dim_product] Generating products...")
@@ -167,18 +167,14 @@ def generate_products(conn, category_map):
     print(f"  Pass 2 complete — {num_to_discontinue} products discontinued via SCD2.")
 
     # ------------------------------------------------------
-    # Build and return product_id_to_sk (current versions only)
+    # Returns all product versions for SCD2 lookup in gen_orders.py
     # ------------------------------------------------------
-    current_products = fetch_all(
+    all_products = fetch_all(
         conn,
         """
-        SELECT product_id, product_sk
+        SELECT product_id, product_sk, effective_start, effective_end
         FROM dw.dim_product
-        WHERE is_current = TRUE
         """
     )
 
-    product_id_to_sk = {pid: psk for pid, psk in current_products}
-
-    print(f"  Done. {len(product_id_to_sk)} current products in map.")
-    return product_id_to_sk
+    return all_products
