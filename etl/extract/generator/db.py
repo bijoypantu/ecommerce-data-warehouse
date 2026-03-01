@@ -95,6 +95,14 @@ def random_datetime(start: date, end: date):
     )
     return random_time
 
+def random_datetime_between(start_dt, end_dt):
+    """
+    Returns a random timezone-aware datetime between two datetimes.
+    Unlike random_datetime() which takes date objects, this takes datetimes.
+    """
+    delta = end_dt - start_dt
+    random_seconds = random.randint(0, int(delta.total_seconds()))
+    return start_dt + timedelta(seconds=random_seconds)
 
 def execute_many(conn, sql, rows, page_size=1000):
     """

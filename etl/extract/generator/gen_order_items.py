@@ -146,7 +146,7 @@ def generate_order_items(conn, orders_map, product_map):
         """
         SELECT order_sk, customer_sk, date_sk,
             order_created_at, currency_code, order_status,
-            total_order_amount, order_discount_total
+            total_order_amount
         FROM dw.fact_orders
         """
     )
