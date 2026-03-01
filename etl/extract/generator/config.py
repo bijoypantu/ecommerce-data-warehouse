@@ -393,6 +393,22 @@ PAYMENT_METHODS = ["credit_card", "debit_card", "upi", "net_banking", "cod", "wa
 
 PAYMENT_METHOD_WEIGHTS = [0.25, 0.20, 0.30, 0.10, 0.10, 0.05]
 
+PAYMENT_PROVIDERS = {
+    "credit_card":  ["Visa", "Mastercard", "Amex", "RuPay"],
+    "debit_card":   ["Visa", "Mastercard", "RuPay", "Maestro"],
+    "upi":          ["GPay", "PhonePe", "Paytm", "BHIM", "Amazon Pay"],
+    "net_banking":  ["HDFC", "SBI", "ICICI", "Axis", "Kotak"],
+    "cod":          [None],
+    "wallet":       ["Paytm", "Amazon Pay", "Mobikwik", "Freecharge"],
+}
+
+GATEWAY_CODES = {
+    "success":   ["00", "000", "APPROVED"],
+    "failed":    ["51", "54", "05", "14", "NSF", "DECLINED"],
+    "pending":   [None],
+    "cancelled": ["USER_CANCELLED", "TIMEOUT", "SESSION_EXPIRED"],
+}
+
 REFUND_REASONS = [
     "Damaged product",
     "Wrong product delivered",

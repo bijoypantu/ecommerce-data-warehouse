@@ -138,4 +138,16 @@ def generate_order_items(conn, orders_map, product_map):
         FROM dw.fact_order_items
         """
     )
-    return all_order_items
+    # ------------------------------------------------------
+    # Return updated orders map with real totals
+    # ------------------------------------------------------
+    updated_orders = fetch_all(
+        conn,
+        """
+        SELECT order_sk, customer_sk, date_sk,
+            order_created_at, currency_code, order_status,
+            total_order_amount, order_discount_total
+        FROM dw.fact_orders
+        """
+    )
+    return all_order_items, updated_orders
