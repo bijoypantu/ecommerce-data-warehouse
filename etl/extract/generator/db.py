@@ -114,3 +114,37 @@ def execute_many(conn, sql, rows, page_size=1000):
         cur.executemany(sql, rows)
     conn.commit()
     print(f"  Updated {len(rows)} rows.")
+
+
+def resolve_customer_at_time(all_customers, target_dt):
+    """
+    Picks a random customer version active at target_dt.
+    all_customers rows: (customer_sk, customer_id, effective_start, effective_end, country)
+    Returns (customer_sk, country) or (None, None)
+    """
+    matches = [
+        row for row in all_customers
+        if row[2] <= target_dt
+        and (row[3] is None or row[3] > target_dt)
+    ]
+    if not matches:
+        return None, None
+    row = random.choice(matches)
+    return row[0], row[4]  # customer_sk, country
+
+
+def resolve_product_at_time(all_products, target_dt):
+    """
+    Picks a random product version active at target_dt.
+    all_products rows: (product_id, product_sk, effective_start, effective_end)
+    Returns product_sk or None
+    """
+    matches = [
+        row for row in all_products
+        if row[2] <= target_dt
+        and (row[3] is None or row[3] > target_dt)
+    ]
+    if not matches:
+        return None
+    row = random.choice(matches)
+    return row[1]  # product_sk
