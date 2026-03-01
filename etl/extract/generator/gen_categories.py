@@ -57,7 +57,6 @@ def generate_categories(conn):
         rows=sub_rows
     )
 
-
     # ----------------------------------------------------------
     # Step 4: Rebuild the full map including sub-categories
     # This gets returned and used by gen_products.py
