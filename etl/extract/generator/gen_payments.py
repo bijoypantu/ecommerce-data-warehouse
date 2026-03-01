@@ -9,7 +9,7 @@ from datetime import date, timedelta
 
 from .config import (
     PAYMENT_PROVIDERS, PAYMENT_METHODS,
-    PAYMENT_METHOD_WEIGHTS, GATEWAY_CODES 
+    GATEWAY_CODES 
 )
 from .db import bulk_insert, date_to_sk, random_datetime_between
 
