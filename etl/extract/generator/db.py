@@ -69,3 +69,23 @@ def date_to_sk(d):
     Example: date(2024, 3, 15) → 20240315
     """
     return int(d.strftime("%Y%m%d"))
+
+
+def execute_many(conn, sql, rows, page_size=1000):
+    """
+    Executes the same SQL statement for multiple rows.
+    Used for UPDATE operations where execute_values isn't suitable.
+
+    Args:
+        conn      : active psycopg2 connection
+        sql       : SQL string with %s placeholders
+        rows      : list of tuples, one per row
+        page_size : batch size for executemany
+    """
+    if not rows:
+        return
+
+    with conn.cursor() as cur:
+        cur.executemany(sql, rows)
+    conn.commit()
+    print(f"  Updated {len(rows)} rows.")
