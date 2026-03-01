@@ -7,7 +7,9 @@
 import os
 import psycopg2
 from psycopg2.extras import execute_values
+from datetime import date, timedelta, datetime, timezone
 from dotenv import load_dotenv
+import random
 
 load_dotenv()
 
@@ -69,6 +71,29 @@ def date_to_sk(d):
     Example: date(2024, 3, 15) → 20240315
     """
     return int(d.strftime("%Y%m%d"))
+
+
+def random_date(start: date, end: date) -> date:
+    delta = (end - start).days
+    return start + timedelta(days=random.randint(0, delta))
+
+
+def random_datetime(start: date, end: date):
+    """
+    Returns a timezone-aware datetime (UTC) between two dates,
+    with a random time component.
+    """
+    random_day = random_date(start, end)
+    random_time = datetime(
+        random_day.year,
+        random_day.month,
+        random_day.day,
+        random.randint(0, 23),   # hour
+        random.randint(0, 59),   # minute
+        random.randint(0, 59),   # second
+        tzinfo=timezone.utc
+    )
+    return random_time
 
 
 def execute_many(conn, sql, rows, page_size=1000):
