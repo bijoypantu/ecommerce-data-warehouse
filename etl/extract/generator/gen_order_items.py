@@ -132,8 +132,8 @@ def generate_order_items(conn, orders_map, product_map):
     all_order_items = fetch_all(
         conn,
         """
-        SELECT order_item_sk, order_item_id, order_sk, product_sk, customer_sk,
-            date_sk, quantity, unit_price_at_order,
+        SELECT order_item_sk, order_item_id, order_sk, product_sk,
+            customer_sk, date_sk, quantity, unit_price_at_order,
             discount_amount, line_total_amount
         FROM dw.fact_order_items
         """
