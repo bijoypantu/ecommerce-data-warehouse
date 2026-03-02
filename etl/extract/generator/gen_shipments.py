@@ -125,9 +125,11 @@ def generate_shipments(conn, updated_orders_map, order_items_map):
 
     # Return delivered shipments for gen_refunds.py
     delivered_shipments = fetch_all(conn, """
-        SELECT order_sk, order_item_sk, customer_sk,
-            shipment_date_sk, delivered_at
-        FROM dw.fact_shipments
-        WHERE shipment_status = 'delivered'
+        SELECT fs.order_sk, fs.order_item_sk, fs.customer_sk,
+            fs.shipment_date_sk, fs.delivered_at,
+            fo.currency_code
+        FROM dw.fact_shipments fs
+        JOIN dw.fact_orders fo ON fo.order_sk = fs.order_sk
+        WHERE fs.shipment_status = 'delivered'
     """)
     return delivered_shipments
