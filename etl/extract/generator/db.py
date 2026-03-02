@@ -10,6 +10,7 @@ from psycopg2.extras import execute_values
 from datetime import date, timedelta, datetime, timezone
 from dotenv import load_dotenv
 import random
+import pandas as pd
 
 load_dotenv()
 
@@ -81,30 +82,32 @@ def random_datetime_between(start_dt, end_dt):
     return start_dt + timedelta(seconds=random_seconds)
 
 
-# New — pandas DataFrame
-def resolve_customer_at_time(customers_df, target_dt):
-    matches = customers_df[
-        (customers_df["effective_start"] <= target_dt) &
-        (customers_df["effective_end"].isna() | 
-         (customers_df["effective_end"] > target_dt))
+def resolve_customer_at_time(customer_versions, target_dt):
+    customer_id = random.choice(list(customer_versions.keys()))
+    versions = customer_versions[customer_id]
+    matches = [
+        row for row in versions
+        if row["effective_start"] <= target_dt
+        and (pd.isna(row["effective_end"]) or row["effective_end"] > target_dt)
     ]
-    if matches.empty:
+    if not matches:
         return None, None
-    row = matches.sample(1).iloc[0]
+    row = random.choice(matches)
     return row["customer_sk"], row["country"]
 
 
-def resolve_product_at_time(products_df, target_dt):
-    matches = products_df[
-        (products_df["effective_start"] <= target_dt) &
-        (products_df["effective_end"].isna() | 
-         (products_df["effective_end"] > target_dt))
+def resolve_product_at_time(product_versions, target_dt):
+    product_id = random.choice(list(product_versions.keys()))
+    versions = product_versions[product_id]
+    matches = [
+        row for row in versions
+        if row["effective_start"] <= target_dt
+        and (pd.isna(row["effective_end"]) or row["effective_end"] > target_dt)
     ]
-    if matches.empty:
+    if not matches:
         return None, None
-    row = matches.sample(1).iloc[0]
+    row = random.choice(matches)
     return row["product_sk"], row["category_name"]
-
 
 def write_jsonl(df, filepath):
     """
