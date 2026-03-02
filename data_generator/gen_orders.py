@@ -30,7 +30,16 @@ def generate_orders(customer_versions):
         order_id = f"ORD-{i:05d}"
 
         # Generate order creation datetime
-        order_created_at = random_datetime(date(2020, 1, 1), date(2026, 3, 1))
+        year = random.choices(
+            [2021, 2022, 2023, 2024, 2025, 2026],
+            weights=[0.05, 0.10, 0.15, 0.20, 0.35, 0.15],
+            k=1
+        )[0]
+
+        if year == 2026:
+            order_created_at = random_datetime(date(2026, 1, 1), date(2026, 3, 1))
+        else:
+            order_created_at = random_datetime(date(year, 1, 1), date(year, 12, 31))
 
         # Resolve customer active at order time
         customer_id, country = resolve_customer_at_time(
