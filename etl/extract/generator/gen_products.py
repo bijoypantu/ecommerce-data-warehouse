@@ -82,9 +82,8 @@ def generate_products(categories_df):
     # ----------------------------------------------------------
     df = pd.DataFrame(rows)
 
-    active_products    = df[df["is_current"] == True].copy()
-    num_to_discontinue = int(len(active_products) * SCD2_PROD_RATE)
-    products_to_discontinue = active_products.sample(num_to_discontinue)
+    num_to_discontinue = int(len(df) * SCD2_PROD_RATE)
+    products_to_discontinue = df.sample(num_to_discontinue)
 
     new_rows = []
     for _, old_row in products_to_discontinue.iterrows():
