@@ -1,135 +1,179 @@
-# etl/extract/generator/gen_shipments.py
+# data_generator/gen_shipments.py
 # ============================================================
-# Generates and inserts fact_shipments rows.
-# total ~1,10,000 shipments
+# Generates fact_shipments DataFrame.
+# Appends order_shipped and order_delivered events to orders_df.
+# Returns shipments_df, orders_df, delivered_shipments_df.
 # ============================================================
 
 import random
-from datetime import timedelta
-from collections import defaultdict
+import pandas as pd
+from datetime import datetime, timezone, timedelta
 from uuid import uuid4
+from collections import defaultdict
 
-from .config import (
-    CARRIERS
-)
-from .db import bulk_insert, date_to_sk, random_datetime_between, \
-fetch_all, execute_many
+from .config import CARRIERS
+from .db import random_datetime_between
 
 
-def generate_shipments(conn, updated_orders_map, order_items_map):
+def generate_shipments(orders_df, items_df):
     """
-    Generates and inserts fact_shipments rows.
-    total 1,10,000 shipments
+    Generates fact_shipments DataFrame.
+    Appends order_shipped and order_delivered events to orders_df.
+    Returns shipments_df, orders_df, delivered_shipments_df.
     """
 
     print("\n[fact_shipments] Generating shipments...")
 
+    # ----------------------------------------------------------
+    # Get only processing orders — eligible for shipment
+    # ----------------------------------------------------------
+    processing_orders = orders_df[
+        orders_df["event_type"] == "order_processing"
+    ].copy()
 
-    # ------------------------------------------------------
-    # PASS : Generate 1,00,000 shipments
-    # ------------------------------------------------------
-    pass_rows = []
-
+    # ----------------------------------------------------------
+    # Group items by order_id
+    # ----------------------------------------------------------
     items_by_order = defaultdict(list)
-    for item in order_items_map:
-        items_by_order[item[2]].append(item)  # item[2] is order_sk
+    for _, item in items_df.iterrows():
+        items_by_order[item["order_id"]].append(item)
 
-    for order in updated_orders_map:
-        order_sk         = order[0]
-        customer_sk      = order[1]
-        order_created_at = order[3]
-        order_status     = order[5]
-        
-        if order_status in ("cancelled", "created"):
-            continue
+    # ----------------------------------------------------------
+    # Randomly select 80% of processing orders to ship
+    # Split into delivered (70/80) and shipped (10/80)
+    # ----------------------------------------------------------
+    num_to_ship      = int(len(processing_orders) * 0.80)
+    orders_to_ship   = processing_orders.sample(num_to_ship)
 
-        order_items = items_by_order[order_sk]
-        item_index = 1
-        for item in order_items:
-            order_item_sk   = item[0]
-            quantity        = item[5]
-            shipment_id = f"SHIP-{order_sk:05d}-{item_index}"
-            item_index += 1
+    num_delivered    = int(len(orders_to_ship) * (70/80))
+    delivered_orders = orders_to_ship.iloc[:num_delivered]
+    shipped_orders   = orders_to_ship.iloc[num_delivered:]
 
-            shipped_at = random_datetime_between(
-                order_created_at, order_created_at + timedelta(days=3))
-            shipment_date_sk = date_to_sk(shipped_at.date())
-            
-            shipment_status = ""
-            if(order_status == "delivered"):
-                delivered_at = random_datetime_between(
-                    shipped_at, shipped_at + timedelta(days=7))
-                delivery_date_sk = date_to_sk(delivered_at.date())
-                shipment_status = "delivered"
-            else:
-                delivered_at = None
-                delivery_date_sk = None
-                shipment_status = "shipped"
-            
-            carrier = random.choice(CARRIERS)
-            tracking_id = f"{uuid4().hex}"
-            shipped_quantity = quantity
+    rows             = []
+    order_events     = []
+    delivered_rows   = []
 
-            pass_rows.append((
-                shipment_id,
-                order_sk,
-                order_item_sk,
-                customer_sk,
-                shipment_date_sk,
-                delivery_date_sk,
-                shipped_at,
-                delivered_at,
-                shipment_status,
-                carrier,
-                tracking_id,
-                shipped_quantity
-            ))
+    # ----------------------------------------------------------
+    # Process delivered orders
+    # ----------------------------------------------------------
+    for _, order in delivered_orders.iterrows():
+        order_id         = order["order_id"]
+        customer_id      = order["customer_id"]
+        order_created_at = order["order_created_at"]
+        currency_code    = order["currency_code"]
 
-    bulk_insert(
-        conn,
-        table="dw.fact_shipments",
-        columns=[
-            "shipment_id", "order_sk", "order_item_sk", "customer_sk",
-            "shipment_date_sk", "delivery_date_sk", "shipped_at",
-            "delivered_at", "shipment_status", "carrier",
-            "tracking_id", "shipped_quantity"
-        ],
-        rows=pass_rows
+        shipped_at = random_datetime_between(
+            order_created_at,
+            order_created_at + timedelta(days=3)
+        )
+        delivered_at = random_datetime_between(
+            shipped_at,
+            shipped_at + timedelta(days=7)
+        )
+
+        order_items = items_by_order[order_id]
+        for idx, item in enumerate(order_items, 1):
+            shipment_id = f"SHIP-{order_id}-{idx}"
+
+            rows.append({
+                "shipment_id":       shipment_id,
+                "order_id":          order_id,
+                "order_item_id":     item["order_item_id"],
+                "customer_id":       customer_id,
+                "shipped_at":        shipped_at,
+                "delivered_at":      delivered_at,
+                "shipment_status":   "delivered",
+                "carrier":           random.choice(CARRIERS),
+                "tracking_id":       uuid4().hex,
+                "shipped_quantity":  item["quantity"],
+                "event_type":        "shipment_created",
+                "ingested_at":       datetime.now(timezone.utc).isoformat(),
+            })
+
+            delivered_rows.append({
+                "order_id":           order_id,
+                "order_item_id":      item["order_item_id"],
+                "customer_id":        customer_id,
+                "delivered_at":       delivered_at,
+                "currency_code":      currency_code,
+                "quantity":           item["quantity"],
+                "unit_price_at_order": item["unit_price_at_order"],
+            })
+
+        # Append order_delivered event
+        order_events.append({
+            "order_id":              order_id,
+            "customer_id":           customer_id,
+            "order_created_at":      order_created_at,
+            "order_last_updated_at": delivered_at,
+            "order_status":          "delivered",
+            "order_channel":         order["order_channel"],
+            "total_order_amount":    order["total_order_amount"],
+            "order_discount_total":  order["order_discount_total"],
+            "currency_code":         currency_code,
+            "total_order_amount_inr":   None,
+            "order_discount_total_inr": None,
+            "event_type":            "order_delivered",
+            "ingested_at":           datetime.now(timezone.utc).isoformat(),
+        })
+
+    # ----------------------------------------------------------
+    # Process shipped orders (in transit)
+    # ----------------------------------------------------------
+    for _, order in shipped_orders.iterrows():
+        order_id         = order["order_id"]
+        customer_id      = order["customer_id"]
+        order_created_at = order["order_created_at"]
+        currency_code    = order["currency_code"]
+
+        shipped_at = random_datetime_between(
+            order_created_at,
+            order_created_at + timedelta(days=3)
+        )
+
+        order_items = items_by_order[order_id]
+        for idx, item in enumerate(order_items, 1):
+            shipment_id = f"SHIP-{order_id}-{idx}"
+
+            rows.append({
+                "shipment_id":       shipment_id,
+                "order_id":          order_id,
+                "order_item_id":     item["order_item_id"],
+                "customer_id":       customer_id,
+                "shipped_at":        shipped_at,
+                "delivered_at":      None,
+                "shipment_status":   "shipped",
+                "carrier":           random.choice(CARRIERS),
+                "tracking_id":       uuid4().hex,
+                "shipped_quantity":  item["quantity"],
+                "event_type":        "shipment_created",
+                "ingested_at":       datetime.now(timezone.utc).isoformat(),
+            })
+
+        # Append order_shipped event
+        order_events.append({
+            "order_id":              order_id,
+            "customer_id":           customer_id,
+            "order_created_at":      order_created_at,
+            "order_last_updated_at": shipped_at,
+            "order_status":          "shipped",
+            "order_channel":         order["order_channel"],
+            "total_order_amount":    order["total_order_amount"],
+            "order_discount_total":  order["order_discount_total"],
+            "currency_code":         currency_code,
+            "total_order_amount_inr":   None,
+            "order_discount_total_inr": None,
+            "event_type":            "order_shipped",
+            "ingested_at":           datetime.now(timezone.utc).isoformat(),
+        })
+
+    shipments_df          = pd.DataFrame(rows)
+    delivered_shipments_df = pd.DataFrame(delivered_rows)
+    orders_df             = pd.concat(
+        [orders_df, pd.DataFrame(order_events)],
+        ignore_index=True
     )
 
-    print(f"  Done. shipments inserted.")
-
-    # Update fact_orders.order_last_updated_at from shipment timestamps
-    print("  Updating fact_orders last updated timestamps...")
-
-    shipment_updates = fetch_all (conn, """
-        SELECT order_sk,
-            MAX(CASE WHEN shipment_status = 'delivered' THEN delivered_at
-                        ELSE shipped_at END) AS last_event
-        FROM dw.fact_shipments
-        GROUP BY order_sk
-    """)
-
-    update_rows = [(ts, sk) for sk, ts in shipment_updates]
-
-    execute_many (
-        conn,
-        """
-        UPDATE dw.fact_orders
-        SET order_last_updated_at = %s
-        WHERE order_sk = %s
-        """,
-        update_rows
-    )
-    print("  fact_orders timestamps updated.")
-
-    # Return delivered shipments for gen_refunds.py
-    delivered_shipments = fetch_all(conn, """
-        SELECT fs.order_sk, fs.order_item_sk, fs.customer_sk,
-            fs.shipment_date_sk, fs.delivered_at,
-            fo.currency_code
-        FROM dw.fact_shipments fs
-        JOIN dw.fact_orders fo ON fo.order_sk = fs.order_sk
-        WHERE fs.shipment_status = 'delivered'
-    """)
-    return delivered_shipments
+    print(f"  Done. {len(shipments_df)} shipment records generated.")
+    print(f"  {len(delivered_orders)} orders delivered, {len(shipped_orders)} orders in transit.")
+    return shipments_df, orders_df, delivered_shipments_df
