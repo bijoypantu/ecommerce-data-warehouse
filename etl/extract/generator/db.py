@@ -11,6 +11,8 @@ from datetime import date, timedelta, datetime, timezone
 from dotenv import load_dotenv
 import random
 import pandas as pd
+from collections import defaultdict
+
 
 load_dotenv()
 
@@ -82,6 +84,50 @@ def random_datetime_between(start_dt, end_dt):
     return start_dt + timedelta(seconds=random_seconds)
 
 
+def build_product_versions(products_df):
+    """
+    Builds product version lookup from raw events.
+    Derives effective_end from next event's effective_start.
+    Returns dict: product_id -> list of version dicts
+    """    
+    versions = defaultdict(list)
+    
+    # Sort by product_id and effective_start
+    sorted_df = products_df.sort_values(["product_id", "effective_start"])
+    
+    for product_id, group in sorted_df.groupby("product_id"):
+        group_rows = group.to_dict("records")
+        for idx, row in enumerate(group_rows):
+            # effective_end = next row's effective_start, or None if last
+            if idx < len(group_rows) - 1:
+                row["effective_end"] = group_rows[idx + 1]["effective_start"]
+                row["is_current"]    = False
+            else:
+                row["effective_end"] = None
+                row["is_current"]    = True
+            versions[product_id].append(row)
+    
+    return versions
+
+
+def build_customer_versions(customers_df):
+    versions = defaultdict(list)
+    sorted_df = customers_df.sort_values(["customer_id", "effective_start"])
+    
+    for customer_id, group in sorted_df.groupby("customer_id"):
+        group_rows = group.to_dict("records")
+        for idx, row in enumerate(group_rows):
+            if idx < len(group_rows) - 1:
+                row["effective_end"] = group_rows[idx + 1]["effective_start"]
+                row["is_current"]    = False
+            else:
+                row["effective_end"] = None
+                row["is_current"]    = True
+            versions[customer_id].append(row)
+    
+    return versions
+
+
 def resolve_customer_at_time(customer_versions, target_dt):
     customer_id = random.choice(list(customer_versions.keys()))
     versions = customer_versions[customer_id]
@@ -93,7 +139,7 @@ def resolve_customer_at_time(customer_versions, target_dt):
     if not matches:
         return None, None
     row = random.choice(matches)
-    return row["customer_sk"], row["country"]
+    return row["customer_id"], row["country"]
 
 
 def resolve_product_at_time(product_versions, target_dt):
@@ -107,7 +153,7 @@ def resolve_product_at_time(product_versions, target_dt):
     if not matches:
         return None, None
     row = random.choice(matches)
-    return row["product_sk"], row["category_name"]
+    return row["product_id"], row["category_name"]
 
 def write_jsonl(df, filepath):
     """
