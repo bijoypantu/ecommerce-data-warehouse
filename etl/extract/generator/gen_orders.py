@@ -15,7 +15,6 @@ from .config import (
 )
 from .db import random_datetime, resolve_customer_at_time
 
-
 def generate_orders(customer_versions):
     """
     Generates all orders as "order_created" events.
