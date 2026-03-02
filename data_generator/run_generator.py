@@ -117,6 +117,5 @@ def main():
     print(f"\n  Total time:   {duration} seconds")
     print("=" * 60)
 
-
 if __name__ == "__main__":
     main()
