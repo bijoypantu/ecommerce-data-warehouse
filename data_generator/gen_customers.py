@@ -10,13 +10,14 @@ import random
 import pandas as pd
 from datetime import date, datetime, timezone
 from faker import Faker
+from dateutil.relativedelta import relativedelta
 
 from .config import (
     COUNTRY_LOCALE, COUNTRY_WEIGHTS,
     MAIL_DOMAINS, COUNTRY_MOBILE_CODE,
     NUM_CUSTOMERS, SCD2_CUST_RATE
 )
-from .db import random_datetime, random_date
+from .db import random_datetime, random_date, random_datetime_between
 
 
 def generate_customers():
@@ -86,7 +87,7 @@ def generate_customers():
         except AttributeError:
             state = None
 
-        signup_timestamp = random_datetime(date(2020, 1, 1), date(2023, 12, 31))
+        signup_timestamp = random_datetime(date(2020, 1, 1), date(2024, 12, 31))
         effective_start = signup_timestamp
 
         rows.append({
@@ -118,7 +119,15 @@ def generate_customers():
 
     new_rows = []
     for _, old_row in customers_to_discontinue.iterrows():
-        change_date = random_datetime(date(2024, 1, 1), date(2025, 6, 30))
+        # change_date is at least 6 months after signup
+        earliest_change = old_row["signup_timestamp"] + relativedelta(months=6)
+        latest_change   = datetime(2025, 12, 31, tzinfo=timezone.utc)
+
+        # Only change if there's a valid window
+        if earliest_change < latest_change:
+            change_date = random_datetime_between(earliest_change, latest_change)
+        else:
+            continue  # skip this customer — not enough time has passed
 
         # Pick a new country different from the original
         available_countries = [c for c in COUNTRY_WEIGHTS.keys() if c != old_row["country"]]
@@ -163,6 +172,6 @@ def generate_customers():
 
     df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
 
-    print(f"  Pass 2 complete — {num_to_discontinue} customers discontinued via SCD2.")
+    print(f"  Pass 2 complete — {len(new_rows)} customers location updated via SCD2.")
     print(f"  Done. {len(df)} total customer rows generated.")
     return df

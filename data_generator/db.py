@@ -129,18 +129,18 @@ def build_customer_versions(customers_df):
 
 
 def resolve_customer_at_time(customer_versions, target_dt):
-    customer_id = random.choice(list(customer_versions.keys()))
-    versions = customer_versions[customer_id]
-    matches = [
-        row for row in versions
-        if row["effective_start"] <= target_dt
-        and (pd.isna(row["effective_end"]) or row["effective_end"] > target_dt)
-    ]
-    if not matches:
-        return None, None
-    row = random.choice(matches)
-    return row["customer_id"], row["country"]
-
+    for _ in range(10):
+        customer_id = random.choice(list(customer_versions.keys()))
+        versions    = customer_versions[customer_id]
+        matches     = [
+            row for row in versions
+            if row["effective_start"] <= target_dt
+            and (pd.isna(row["effective_end"]) or row["effective_end"] > target_dt)
+        ]
+        if matches:
+            row = random.choice(matches)
+            return row["customer_id"], row["country"]
+    return None, None
 
 def resolve_product_at_time(product_versions, target_dt):
     # Try up to 10 times to find a matching product
