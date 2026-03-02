@@ -10,12 +10,13 @@ import random
 import pandas as pd
 from datetime import date, datetime, timezone
 from faker import Faker
+from dateutil.relativedelta import relativedelta
 
 from .config import (
     CATEGORIES, BRANDS, COLORS, SIZES,
     NUM_PRODUCTS, SCD2_PROD_RATE
 )
-from .db import random_datetime
+from .db import random_datetime, random_datetime_between
 
 fake = Faker()
 
@@ -58,7 +59,7 @@ def generate_products(categories_df):
         size         = random.choice(size_options) if size_options else None
         product_name = f"{brand} {cat_name}"
         model        = fake.bothify(text="Model-##??").upper()
-        effective_start = random_datetime(date(2020, 1, 1), date(2023, 12, 31))
+        effective_start = random_datetime(date(2020, 1, 1), date(2024, 12, 31))
 
         rows.append({
             "product_id":      product_id,
@@ -87,7 +88,13 @@ def generate_products(categories_df):
 
     new_rows = []
     for _, old_row in products_to_discontinue.iterrows():
-        change_date = random_datetime(date(2024, 1, 1), date(2025, 6, 30))
+        earliest_change = old_row["effective_start"] + relativedelta(months=6)
+        latest_change   = datetime(2025, 12, 31, tzinfo=timezone.utc)
+
+        if earliest_change >= latest_change:
+            continue
+
+        change_date = random_datetime_between(earliest_change, latest_change)
 
         new_rows.append({
             "product_id":      old_row["product_id"],
