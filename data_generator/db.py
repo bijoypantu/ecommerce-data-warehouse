@@ -143,17 +143,19 @@ def resolve_customer_at_time(customer_versions, target_dt):
 
 
 def resolve_product_at_time(product_versions, target_dt):
-    product_id = random.choice(list(product_versions.keys()))
-    versions = product_versions[product_id]
-    matches = [
-        row for row in versions
-        if row["effective_start"] <= target_dt
-        and (pd.isna(row["effective_end"]) or row["effective_end"] > target_dt)
-    ]
-    if not matches:
-        return None, None
-    row = random.choice(matches)
-    return row["product_id"], row["category_name"]
+    # Try up to 10 times to find a matching product
+    for _ in range(10):
+        product_id = random.choice(list(product_versions.keys()))
+        versions   = product_versions[product_id]
+        matches    = [
+            row for row in versions
+            if row["effective_start"] <= target_dt
+            and (pd.isna(row["effective_end"]) or row["effective_end"] > target_dt)
+        ]
+        if matches:
+            row = random.choice(matches)
+            return row["product_id"], row["category_name"]
+    return None, None
 
 def write_jsonl(df, filepath):
     """
