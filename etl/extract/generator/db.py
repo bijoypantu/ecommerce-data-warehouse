@@ -27,30 +27,6 @@ def get_connection():
     )
 
 
-def bulk_insert(conn, table, columns, rows, page_size=1000):
-    """
-    Inserts a list of tuples into the given table.
-
-    Args:
-        conn      : active psycopg2 connection
-        table     : fully qualified table name e.g. 'dw.dim_category'
-        columns   : list of column names e.g. ['category_id', 'category_name']
-        rows      : list of tuples matching the column order
-        page_size : how many rows to insert per batch
-    """
-    if not rows:
-        print(f"  No rows to insert for {table}. Skipping.")
-        return
-
-    col_str = ", ".join(columns)
-    sql = f"INSERT INTO {table} ({col_str}) VALUES %s"
-
-    with conn.cursor() as cur:
-        execute_values(cur, sql, rows, page_size=page_size)
-    conn.commit()
-    print(f"  Inserted {len(rows)} rows into {table}.")
-
-
 def fetch_all(conn, query, params=None):
     """
     Executes a SELECT query and returns all rows as a list of tuples.
@@ -104,55 +80,27 @@ def random_datetime_between(start_dt, end_dt):
     random_seconds = random.randint(0, int(delta.total_seconds()))
     return start_dt + timedelta(seconds=random_seconds)
 
-def execute_many(conn, sql, rows, page_size=1000):
-    """
-    Executes the same SQL statement for multiple rows.
-    Used for UPDATE operations where execute_values isn't suitable.
 
-    Args:
-        conn      : active psycopg2 connection
-        sql       : SQL string with %s placeholders
-        rows      : list of tuples, one per row
-        page_size : batch size for executemany
-    """
-    if not rows:
-        return
-
-    with conn.cursor() as cur:
-        cur.executemany(sql, rows)
-    conn.commit()
-    print(f"  Updated {len(rows)} rows.")
-
-
-def resolve_customer_at_time(all_customers, target_dt):
-    """
-    Picks a random customer version active at target_dt.
-    all_customers rows: (customer_sk, customer_id, effective_start, effective_end, country)
-    Returns (customer_sk, country) or (None, None)
-    """
-    matches = [
-        row for row in all_customers
-        if row[2] <= target_dt
-        and (row[3] is None or row[3] > target_dt)
+# New — pandas DataFrame
+def resolve_customer_at_time(customers_df, target_dt):
+    matches = customers_df[
+        (customers_df["effective_start"] <= target_dt) &
+        (customers_df["effective_end"].isna() | 
+         (customers_df["effective_end"] > target_dt))
     ]
-    if not matches:
+    if matches.empty:
         return None, None
-    row = random.choice(matches)
-    return row[0], row[4]  # customer_sk, country
+    row = matches.sample(1).iloc[0]
+    return row["customer_sk"], row["country"]
 
 
-def resolve_product_at_time(all_products, target_dt):
-    """
-    Picks a random product version active at target_dt.
-    all_products rows: (product_id, product_sk, effective_start, effective_end, category_name)
-    Returns (product_sk, category_name) or (None, None)
-    """
-    matches = [
-        row for row in all_products
-        if row[2] <= target_dt
-        and (row[3] is None or row[3] > target_dt)
+def resolve_product_at_time(products_df, target_dt):
+    matches = products_df[
+        (products_df["effective_start"] <= target_dt) &
+        (products_df["effective_end"].isna() | 
+         (products_df["effective_end"] > target_dt))
     ]
-    if not matches:
+    if matches.empty:
         return None, None
-    row = random.choice(matches)
-    return row[1], row[4]  # product_sk, category_name
+    row = matches.sample(1).iloc[0]
+    return row["product_sk"], row["category_name"]
