@@ -122,3 +122,12 @@ def generate_shipments(conn, updated_orders_map, order_items_map):
         update_rows
     )
     print("  fact_orders timestamps updated.")
+
+    # Return delivered shipments for gen_refunds.py
+    delivered_shipments = fetch_all(conn, """
+        SELECT order_sk, order_item_sk, customer_sk,
+            shipment_date_sk, delivered_at
+        FROM dw.fact_shipments
+        WHERE shipment_status = 'delivered'
+    """)
+    return delivered_shipments
