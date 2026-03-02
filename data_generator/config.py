@@ -390,6 +390,7 @@ MAIL_DOMAINS = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "zohomai
 # Payment configuration
 # ------------------------------------------------------------
 PAYMENT_METHODS = ["credit_card", "debit_card", "upi", "net_banking", "cod", "wallet"]
+PAYMENT_METHOD_WEIGHTS = [0.25, 0.20, 0.30, 0.10, 0.10, 0.05]
 
 PAYMENT_PROVIDERS = {
     "credit_card":  ["Visa", "Mastercard", "Amex", "RuPay"],
