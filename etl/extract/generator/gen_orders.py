@@ -1,99 +1,70 @@
 # etl/extract/generator/gen_orders.py
 # ============================================================
-# Generates and inserts fact_orders rows.
-# total 1,00,000 orders
+# Generates fact_orders DataFrame.
+# All orders start as "order_created" events.
+# Status progression happens in subsequent generators.
+# Returns orders_df for Bronze layer writing.
 # ============================================================
 
 import random
-from datetime import date
+import pandas as pd
+from datetime import date, datetime, timezone
 
 from .config import (
-    NUM_ORDERS, SCD2_CUTOFF,
-    COUNTRY_CURRENCY
+    NUM_ORDERS, COUNTRY_CURRENCY
 )
-from .db import bulk_insert, fetch_all, date_to_sk, random_datetime, \
-resolve_customer_at_time
+from .db import random_datetime, resolve_customer_at_time
 
 
-def generate_orders(conn, customer_map):
+def generate_orders(customer_versions):
     """
-    Generates and inserts fact_orders rows.
-    total 1,00,000 orders
+    Generates all orders as "order_created" events.
+    No status distribution — that happens in payments and shipments.
+    Returns orders_df.
     """
 
     print("\n[fact_orders] Generating orders...")
 
-
-    # ------------------------------------------------------
-    # PASS : Generate 1,00,000 orders
-    # ------------------------------------------------------
-    pass_rows = []
+    rows = []
 
     for i in range(1, NUM_ORDERS + 1):
         order_id = f"ORD-{i:05d}"
 
-        # Generate cration date between 2020 and present date
+        # Generate order creation datetime
         order_created_at = random_datetime(date(2020, 1, 1), date(2026, 3, 1))
-        order_last_updated_at = order_created_at
-        date_sk = date_to_sk(order_created_at.date())
 
-        customer = resolve_customer_at_time(customer_map, order_created_at)
-        customer_sk = customer[0]
+        # Resolve customer active at order time
+        customer_id, country = resolve_customer_at_time(
+            customer_versions, order_created_at
+        )
 
-        status = []
-        status_weight = []
-        if order_created_at.date() < SCD2_CUTOFF:
-            status = ["delivered", "cancelled"]
-            status_weight = [0.85, 0.15]
-        else:
-            status = ["delivered", "shipped", "cancelled", "created"]
-            status_weight = [0.70, 0.10, 0.15, 0.05]
+        # Handle edge case where no customer found
+        if customer_id is None:
+            continue
 
-        order_status = random.choices(status, weights=status_weight, k=1)[0]
+        # Derive currency from customer's country
+        currency_code = COUNTRY_CURRENCY[country]
+
+        # Order channel
         order_channel = random.choice(["web", "mobile", "marketplace"])
 
-        currency_code = COUNTRY_CURRENCY[customer[1]]
+        rows.append({
+            "order_id":            order_id,
+            "customer_id":         customer_id,
+            "order_created_at":    order_created_at,
+            "order_last_updated_at": order_created_at,  # placeholder
+            "order_status":        "created",
+            "order_channel":       order_channel,
+            "total_order_amount":  0,           # updated by gen_order_items
+            "order_discount_total": 0,          # updated by gen_order_items
+            "currency_code":       currency_code,
+            "total_order_amount_inr":   None,   # calculated in ETL
+            "order_discount_total_inr": None,   # calculated in ETL
+            "event_type":          "order_created",
+            "ingested_at":         datetime.now(timezone.utc).isoformat(),
+        })
 
+    df = pd.DataFrame(rows)
 
-        pass_rows.append((
-            order_id,
-            customer_sk,
-            date_sk,
-            order_created_at,
-            order_last_updated_at,
-            order_status,
-            order_channel,
-            0,
-            0,
-            currency_code,
-            0,
-            0,
-        ))
-
-    bulk_insert(
-        conn,
-        table="dw.fact_orders",
-        columns= [
-            "order_id", "customer_sk", "date_sk", "order_created_at",
-            "order_last_updated_at", "order_status", "order_channel", 
-            "total_order_amount", "order_discount_total", "currency_code",
-            "total_order_amount_inr", "order_discount_total_inr"
-        ],
-        rows=pass_rows
-    )
-
-    print(f"  Done. {NUM_ORDERS} orders inserted.")
-   
-    # ------------------------------------------------------
-    # Return all orders
-    # ------------------------------------------------------
-    all_orders = fetch_all(
-        conn,
-        """
-        SELECT order_sk, customer_sk, date_sk,
-            order_created_at, currency_code, order_status
-        FROM dw.fact_orders
-        """
-    )
-
-    return all_orders
+    print(f"  Done. {len(df)} orders generated.")
+    return df
