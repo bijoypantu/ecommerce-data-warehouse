@@ -21,7 +21,6 @@ from .gen_refunds import generate_refunds
 
 
 def main():
-
     start_time = datetime.now()
     print("=" * 60)
     print("  E-Commerce Data Generator — Bronze Layer")
