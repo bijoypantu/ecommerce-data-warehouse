@@ -407,6 +407,11 @@ GATEWAY_CODES = {
     "cancelled": ["USER_CANCELLED", "TIMEOUT", "SESSION_EXPIRED"],
 }
 
+CARRIERS = [
+    "FedEx", "DHL", "UPS", "BlueDart", "Delhivery",
+    "Ecom Express", "XpressBees", "Shadowfax", "DTDC", "India Post"
+]
+
 REFUND_REASONS = [
     "Damaged product",
     "Wrong product delivered",
