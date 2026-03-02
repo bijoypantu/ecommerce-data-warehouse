@@ -7,7 +7,8 @@
 # ============================================================
 
 import random
-from datetime import date
+import pandas as pd
+from datetime import date, datetime, timezone
 from faker import Faker
 
 from .config import (
@@ -15,17 +16,17 @@ from .config import (
     MAIL_DOMAINS, COUNTRY_MOBILE_CODE,
     NUM_CUSTOMERS, SCD2_CUST_RATE
 )
-from .db import bulk_insert, fetch_all, execute_many, random_date, random_datetime
+from .db import random_datetime, random_date
 
 
-def generate_customers(conn):
+def generate_customers():
     """
     Generates dim_customer rows in two passes.
     Pass 1 — 10000 active customers
     Pass 2 — 5% get discontinued via SCD2
     Returns all_customers for all versions.
     """
-
+     
     print("\n[dim_customer] Generating customers...")
 
     # Build Faker instances once per locale
@@ -34,18 +35,16 @@ def generate_customers(conn):
         for country, locale in COUNTRY_LOCALE.items()
     }
 
-    # ------------------------------------------------------
-    # PASS 1: Generate 10000 active customers
-    # ------------------------------------------------------
-    pass1_rows = []
-
+    rows = []
+    # ----------------------------------------------------------
+    # PASS 1: Generate 1000 active customers
+    # ----------------------------------------------------------
     for i in range(1, NUM_CUSTOMERS + 1):
         customer_id = f"CUST-{i:05d}"
-
         # Pick a random gender
         gender = random.choice(['male', 'female', 'other'])
 
-        # Pick first name, last name
+        # Pick country
         country = random.choices(
             list(COUNTRY_WEIGHTS.keys()),
             weights=list(COUNTRY_WEIGHTS.values()),
@@ -53,7 +52,6 @@ def generate_customers(conn):
         )[0]
 
         fake = faker_instances[country]
-
         # fake first_name, last_name, date_of_birth, email, mobile_no
         try:
             if gender == 'male':
@@ -64,9 +62,8 @@ def generate_customers(conn):
                 first_name = fake.first_name()
         except AttributeError:
             first_name = fake.first_name()
-
         last_name = fake.last_name()
-
+        
         date_of_birth = random_date(date(1960, 1, 1), date(2008, 1, 1))
         
         clean_first = first_name.lower().replace(" ", "").replace("'", "")
@@ -92,69 +89,39 @@ def generate_customers(conn):
         signup_timestamp = random_datetime(date(2020, 1, 1), date(2023, 12, 31))
         effective_start = signup_timestamp
 
+        rows.append({
+            "customer_id":      customer_id,
+            "first_name":       first_name,
+            "last_name":        last_name,
+            "date_of_birth":    date_of_birth,
+            "email":            email,
+            "mobile_no":        mobile_no,
+            "city":             city,
+            "state":            state,
+            "country":          country,
+            "signup_timestamp": signup_timestamp,
+            "effective_start":  effective_start,
+            "gender":           gender,
+            "event_type":      "created",
+            "ingested_at":     datetime.now(timezone.utc).isoformat(),
+        })
 
-        pass1_rows.append((
-            customer_id,
-            first_name,
-            last_name,
-            date_of_birth,
-            email,
-            mobile_no,
-            city,
-            state,
-            country,
-            signup_timestamp,
-            effective_start,
-            None,    # effective_end
-            True,    # is_current
-            gender,
-        ))
+    print(f"  Pass 1 complete — {NUM_CUSTOMERS} active customers generated.")
 
-    bulk_insert(
-        conn,
-        table="dw.dim_customer",
-        columns=[
-            "customer_id", "first_name", "last_name", "date_of_birth",
-            "email", "mobile_no", "city", "state",
-            "country", "signup_timestamp", "effective_start", "effective_end",
-            "is_current", "gender"
-        ],
-        rows=pass1_rows
-    )
-
-    print(f"  Pass 1 complete — {NUM_CUSTOMERS} active customers inserted.")
-
-    # ------------------------------------------------------
+    # ----------------------------------------------------------
     # PASS 2: SCD2 — update location for 5% of customers
-    # ------------------------------------------------------
-    all_customers = fetch_all(
-        conn,
-        """
-        SELECT customer_sk, customer_id, first_name, last_name,
-            date_of_birth, email, mobile_no, country, gender, signup_timestamp
-        FROM dw.dim_customer
-        WHERE is_current = TRUE
-        """
-    )
+    # ----------------------------------------------------------
+    df = pd.DataFrame(rows)
 
-    num_to_discontinue = int(len(all_customers) * SCD2_CUST_RATE)
-    customers_to_discontinue = random.sample(all_customers, num_to_discontinue)
+    num_to_discontinue = int(len(df) * SCD2_CUST_RATE)
+    customers_to_discontinue = df.sample(num_to_discontinue)
 
-    update_rows = []
-    new_rows    = []
-
-    for row in customers_to_discontinue:
-        (customer_sk, customer_id, first_name, last_name, date_of_birth,
-        email, mobile_no, original_country, gender, signup_timestamp) = row
-
-        # SCD2 change date — after the customer's effective_start
-        change_timestamp = random_datetime(date(2024, 1, 1), date(2025, 12, 31))
-
-        # Close the current row
-        update_rows.append((change_timestamp, customer_sk))
+    new_rows = []
+    for _, old_row in customers_to_discontinue.iterrows():
+        change_date = random_datetime(date(2024, 1, 1), date(2025, 6, 30))
 
         # Pick a new country different from the original
-        available_countries = [c for c in COUNTRY_WEIGHTS.keys() if c != original_country]
+        available_countries = [c for c in COUNTRY_WEIGHTS.keys() if c != old_row["country"]]
         available_weights   = [COUNTRY_WEIGHTS[c] for c in available_countries]
 
         new_country = random.choices(
@@ -177,60 +144,25 @@ def generate_customers(conn):
         except AttributeError:
             new_state = None
 
-        # Open a new row for the customer with updated location
-        new_rows.append((
-            customer_id,
-            first_name,
-            last_name,
-            date_of_birth,
-            email,
-            mobile_no,
-            new_city,
-            new_state,
-            new_country,
-            signup_timestamp,
-            change_timestamp,
-            None,    # effective_end
-            True,    # is_current
-            gender,
-        ))
+        new_rows.append({
+            "customer_id":      old_row["customer_id"],
+            "first_name":       old_row["first_name"],
+            "last_name":        old_row["last_name"],
+            "date_of_birth":    old_row["date_of_birth"],
+            "email":            old_row["email"],
+            "mobile_no":        old_row["mobile_no"],
+            "city":             new_city,
+            "state":            new_state,
+            "country":          new_country,
+            "signup_timestamp": old_row["signup_timestamp"],
+            "effective_start":  change_date,
+            "gender":           old_row["gender"],
+            "event_type":      "location_updated",
+            "ingested_at":     datetime.now(timezone.utc).isoformat(),
+        })
 
-    # Run updates first, then inserts
-    execute_many(
-        conn,
-        """
-        UPDATE dw.dim_customer
-        SET effective_end = %s,
-            is_current = FALSE
-        WHERE customer_sk = %s
-        AND is_current = TRUE
-        """,
-        update_rows
-    )
-
-    bulk_insert(
-        conn,
-        table="dw.dim_customer",
-        columns=[
-           "customer_id", "first_name", "last_name", "date_of_birth",
-            "email", "mobile_no", "city", "state",
-            "country", "signup_timestamp", "effective_start", "effective_end",
-            "is_current", "gender"
-        ],
-        rows=new_rows
-    )
+    df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
 
     print(f"  Pass 2 complete — {num_to_discontinue} customers discontinued via SCD2.")
-
-    # ------------------------------------------------------
-    # Return all customer versions for SCD2 lookup in gen_orders.py
-    # ------------------------------------------------------
-    all_customers = fetch_all(
-        conn,
-        """
-        SELECT customer_sk, customer_id, effective_start, effective_end, country
-        FROM dw.dim_customer
-        """
-    )
-
-    return all_customers
+    print(f"  Done. {len(df)} total customer rows generated.")
+    return df
