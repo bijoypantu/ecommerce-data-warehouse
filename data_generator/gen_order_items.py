@@ -43,6 +43,10 @@ def generate_order_items(orders_df, product_versions, rate_lookup):
             product_id, category_name = resolve_product_at_time(
                 product_versions, order_created_at
             )
+            # Skip if no product found for this timestamp
+            if product_id is None:
+                continue
+            
             date_sk = date_to_sk(order_created_at.date())
             rate = rate_lookup.get((date_sk, currency_code), 1)
             unit_price_inr = round(random.uniform(*PRICE_RANGES[category_name]), 2)
