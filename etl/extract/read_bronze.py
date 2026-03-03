@@ -34,6 +34,7 @@ BRONZE_ROOT = Path("data_lake/raw")
 # Add new files here as the project grows.
 # ------------------------------------------------------------
 TIMESTAMP_COLUMNS: dict[str, list[str]] = {
+    "dim_category":      ["ingested_at"],
     "dim_customer":      ["signup_timestamp", "effective_start", "ingested_at"],
     "dim_product":       ["effective_start", "ingested_at"],
     "fact_orders":       ["order_created_at", "order_last_updated_at", "ingested_at"],
