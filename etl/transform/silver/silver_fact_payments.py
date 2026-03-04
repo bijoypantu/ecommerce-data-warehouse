@@ -66,8 +66,7 @@ def run():
         #
         # Three categories of checks:
         #   a) NOT NULL constraints
-        #   b) CHECK constraint — valid status and channel values
-        #   c) CHECK constraints — amount and date range rules
+        #   b) CHECK constraints
         # ------------------------------------------------------
 
         # a) NOT NULL
