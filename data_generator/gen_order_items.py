@@ -94,7 +94,7 @@ def generate_order_items(orders_df, product_versions, rate_lookup):
     totals = (
         df.groupby("order_id")
         .agg(
-            total_order_amount=("line_total_amount", "sum"),
+            total_order_amount=("total_amount", "sum"),
             order_discount_total=("discount_amount", "sum")
         )
         .reset_index()
