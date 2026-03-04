@@ -54,9 +54,7 @@ def run():
         # STEP 3: Validate — NOT NULL columns 
         #                   and check constrains
         # ------------------------------------------------------
-        null_mask = df["customer_id"].isna() | df["first_name"].isna() \
-                    | df["country"].isna() | df["signup_timestamp"].isna() \
-                    | df["effective_start"].isna()
+        null_mask = df["customer_id"].isna() | df["first_name"].isna() | df["country"].isna() | df["signup_timestamp"].isna() | df["effective_start"].isna()
         
         gender_mask = ~df["gender"].str.strip().str.lower().isin(["male", "female", "other"])
         reject_mask = null_mask | gender_mask
