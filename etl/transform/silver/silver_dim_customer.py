@@ -65,8 +65,8 @@ def run():
 
         for _, row in rejected_df.iterrows():
             auditor.log_rejected_record(
-                record_id=str(row.get("customer_id", "UNKNOWN"))
-                rejection_reason= "null values or incorrect gender"
+                record_id=str(row.get("customer_id", "UNKNOWN")),
+                rejection_reason= "null values or incorrect gender",
                 raw_data=row.to_dict()
             )
 
@@ -114,8 +114,5 @@ def run():
         )
 
 
-# ----------------------------------------------------------------------------
-# Allows running directly: python -m etl.transform.silver.silver_dim_customer
-# ----------------------------------------------------------------------------
 if __name__ == "__main__":
     run()
