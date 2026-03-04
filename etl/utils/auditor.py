@@ -8,6 +8,7 @@
 import os
 import json
 from datetime import datetime, timezone
+import pandas as pd
 from typing import Optional
 
 import psycopg2
@@ -289,6 +290,15 @@ class PipelineAuditor:
         if self.run_id is None:
             logger.warning("log_rejected_record() called before start().")
             return
+
+        # Serialize raw_data — convert Timestamps and other
+        # non-JSON-serializable types to strings before storing as JSONB
+        if raw_data is not None:
+            raw_data = {
+                k: v.isoformat() if hasattr(v, "isoformat") else
+                   None if (isinstance(v, float) and pd.isna(v)) else v
+                for k, v in raw_data.items()
+            }
 
         sql = """
             INSERT INTO audit.rejected_records
