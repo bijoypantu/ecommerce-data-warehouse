@@ -1,3 +1,19 @@
+# etl/transform/silver/silver_dim_product.py
+# ============================================================
+# Silver transform for dim_product.
+#
+# Bronze  →  data_lake/raw/dim_product.jsonl
+# Silver  →  data_lake/processed/dim_product.parquet
+#
+# Responsibilities:
+#   1. Read Bronze JSONL via read_bronze()
+#   2. Deduplicate on product_id, effective_start
+#   3. Validate — nulls and constraints
+#   4. Select only Silver-relevant columns
+#   5. Write clean Parquet to Silver layer
+#   6. Track everything via PipelineAuditor
+# ============================================================
+
 from pathlib import Path
 import pandas as pd
 
