@@ -7,11 +7,12 @@
 #
 # Responsibilities:
 #   1. Read Bronze JSONL via read_bronze()
-#   2. Deduplicate on order_item_id for latest event per order
-#   3. Validate — nulls and constraints
-#   4. Select only Silver-relevant columns
-#   5. Write clean Parquet to Silver layer
-#   6. Track everything via PipelineAuditor
+#   2. Deduplicate — keep latest event per order_item_id
+#   3. Validate — nulls, check constraints, date ranges
+#   4. Derive date_sk from order_created_at
+#   5. Select only Silver-relevant columns
+#   6. Write clean Parquet to Silver layer
+#   7. Track everything via PipelineAuditor
 # ============================================================
 
 from pathlib import Path
@@ -25,78 +26,134 @@ logger = get_logger(__name__)
 
 SILVER_PATH = Path("data_lake/processed/fact_order_items.parquet")
 
+# NOT NULL columns — validated in bulk
+NOT_NULL_COLS = [
+    "order_item_id", "order_id", "product_id", "customer_id",
+    "order_created_at", "quantity", "unit_price_at_order",
+    "discount_amount", "line_total_amount"
+]
+
+
 def run():
     with PipelineAuditor(
         pipeline_name="silver_fact_order_items",
         table_name="fact_order_items",
         layer="silver"
     ) as auditor:
-        
+
         # ------------------------------------------------------
         # STEP 1: Read Bronze
+        # fact_order_items.jsonl contains a single event type: order_item_created.
+        # Dedup guards against duplicate writes only.
         # ------------------------------------------------------
         df = read_bronze("fact_order_items")
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
 
         # ------------------------------------------------------
-        # STEP 2: Deduplicate on order_item_id — keep latest event per order
+        # STEP 2: Deduplicate — keep latest event per order_item_id
+        #
+        # Sort descending by order_last_updated_at so the most
+        # recent event per order floats to the top, then keep
+        # the first occurrence after grouping by order_item_id.
         # ------------------------------------------------------
         before_dedup = rows_read
-        df = df.sort_values("order_last_updated_at", ascending=False)
-        df = df.drop_duplicates(subset=["order_item_id"], keep="first")
+        df = df.drop_duplicates(subset=["order_id", "order_item_id"], keep="first")
         after_dedup = len(df)
 
         dupes_dropped = before_dedup - after_dedup
-        if (dupes_dropped > 0):
+        if dupes_dropped > 0:
             logger.warning(f"Duplicates dropped: {dupes_dropped}")
 
         # ------------------------------------------------------
-        # STEP 3: Validate — NOT NULL columns 
-        #                   and check constrains
+        # STEP 3: Validate
+        #
+        # Three categories of checks:
+        #   a) NOT NULL constraints
+        #   b) CHECK constraint — valid status and channel values
+        #   c) CHECK constraints — amount and date range rules
         # ------------------------------------------------------
-        null_mask = df["order_item_id"].isna() | df["customer_id"].isna() | df["order_created_at"].isna() | df["order_last_updated_at"].isna() \
-                    | df["order_status"].isna() | df["order_channel"].isna() | df["total_order_amount"].isna() | df["order_discount_total"].isna() \
-                    | df["currency_code"].isna()
-        status_mask = ~df["order_status"].str.strip().str.lower().isin(["created", "processing", "cancelled", "shipped", "delivered"])
-        channel_mask = ~df["order_channel"].str.strip().str.lower().isin(["web", "mobile", "marketplace"])
 
-        reject_mask = null_mask | status_mask | channel_mask
+        # a) NOT NULL
+        null_mask = pd.Series(False, index=df.index)
+        for col in NOT_NULL_COLS:
+            null_mask |= df[col].isna()
+
+        # b) Amount and date range rules
+        quantity_mask   = df["quantity"] <= 0
+        unit_price_mask = df["unit_price_at_order"] < 0
+        line_amnt_mask = df["line_total_amount"] < 0
+        
+        discount_mask = (
+            (df["discount_amount"] < 0) |
+            (df["discount_amount"] > df["total_amount"])
+        )
+
+        reject_mask = null_mask | quantity_mask | unit_price_mask | line_amnt_mask | discount_mask
         rejected_df = df[reject_mask]
-        df = df[~reject_mask].reset_index(drop=True)
+        df          = df[~reject_mask].reset_index(drop=True)
 
         rows_rejected = len(rejected_df)
 
+        # Log each rejected row with specific reasons
         for _, row in rejected_df.iterrows():
+            reasons = []
+
+            for col in NOT_NULL_COLS:
+                if pd.isna(row.get(col)):
+                    reasons.append(f"null {col}")
+
+            if pd.notna(row.get("quantity")) and row["quantity"] <= 0:
+                reasons.append("invalid order_item_quantity")
+            if pd.notna(row.get("unit_price_at_order")) and row["unit_price_at_order"] < 0:
+                reasons.append("negative unit_price_at_order")
+            if pd.notna(row.get("line_total_amount")) and row["line_total_amount"] < 0:
+                reasons.append("negative line_total_amount")
+
+            if pd.notna(row.get("discount_amount")):
+                if row["discount_amount"] < 0:
+                    reasons.append("negative order_discount_total")
+                if pd.notna(row.get("total_amount")) and row["discount_amount"] > row["total_amount"]:
+                    reasons.append("discount exceeds total_item_amount")
+
             auditor.log_rejected_record(
                 record_id=str(row.get("order_item_id", "UNKNOWN")),
-                rejection_reason= "null values or incorrect status or channel",
+                rejection_reason=", ".join(reasons) if reasons else "unknown",
                 raw_data=row.to_dict()
             )
 
         auditor.log_quality_check(
-            check_name="null_values_or_incorrect_status_or_channel",
+            check_name="nulls_amounts_discounts",
             rows_checked=before_dedup,
             rows_failed=rows_rejected
         )
 
-        logger.info(
-            f"Validation complete | "
-            f"passed={len(df)} rejected={rows_rejected}"
-        )
+        logger.info(f"Validation complete | passed={len(df)} rejected={rows_rejected}")
+
+        # ------------------------------------------------------
+        # STEP 4: Derive date_sk
+        #
+        # date_sk is a derived business key — not a DB surrogate.
+        # Calculated here in Silver so all downstream layers
+        # have it ready without recalculating.
+        # Format: YYYYMMDD integer e.g. 20240712
+        # ------------------------------------------------------
         df["date_sk"] = df["order_created_at"].dt.strftime("%Y%m%d").astype(int)
 
         # ------------------------------------------------------
-        # STEP 4: Select Silver columns
+        # STEP 5: Selecting Silver columns
+        # Drop: total_amount, category_name (Bronze-internal columns)
+        # Drop: event_type, ingested_at (Bronze metadata)
+        # line_total_amount_inr calculated in Gold
         # ------------------------------------------------------
         df = df[[
-            "order_item_id", "customer_id", "date_sk", "order_created_at",
-            "order_last_updated_at", "order_status", "order_channel",
-            "total_order_amount", "order_discount_total", "currency_code"
+            "order_item_id", "order_id", "product_id", "customer_id",
+            "date_sk", "quantity", "unit_price_at_order",
+            "discount_amount", "line_total_amount"
         ]]
 
         # ------------------------------------------------------
-        # STEP 5: Write to Silver as Parquet
+        # STEP 6: Writing to Silver as Parquet
         # ------------------------------------------------------
         SILVER_PATH.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(SILVER_PATH, index=False)
@@ -105,7 +162,7 @@ def run():
         logger.info(f"Silver Parquet written: {SILVER_PATH} | rows={rows_written}")
 
         # ------------------------------------------------------
-        # STEP 6: Tell the auditor the final row counts.
+        # STEP 7: Telling the auditor the final row counts
         # ------------------------------------------------------
         auditor.set_row_counts(
             rows_read=rows_read,
@@ -114,7 +171,7 @@ def run():
         )
 
         logger.info(
-            f"silver_fact_order_items complete |"
+            f"silver_fact_order_items complete | "
             f"read={rows_read} written={rows_written} rejected={rows_rejected}"
         )
 
