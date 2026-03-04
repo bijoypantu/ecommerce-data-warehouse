@@ -275,5 +275,5 @@ ORDER BY started_at DESC;
 
 ## Author
 
-Bijoy Pantu
-Data Engineering Portfolio Project
+**Bijoy Pantu** \
+**Data Engineering Portfolio Project**
