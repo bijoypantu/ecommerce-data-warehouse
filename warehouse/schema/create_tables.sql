@@ -155,7 +155,10 @@ CREATE TABLE dw.fact_orders (
     CONSTRAINT chk_fact_orders_status CHECK (order_status IN ('created','processing','shipped','cancelled','delivered')),
     CONSTRAINT chk_fact_orders_channel CHECK (order_channel IN ('web','mobile','marketplace')),
     CONSTRAINT chk_fact_orders_amount CHECK (total_order_amount >= 0),
-    CONSTRAINT chk_fact_orders_discnt CHECK (order_discount_total >= 0 AND order_discount_total <= total_order_amount),
+    CONSTRAINT chk_fact_orders_discnt CHECK (
+        order_discount_total >= 0 
+        AND order_discount_total <= total_order_amount
+    ),
     CONSTRAINT chk_fact_orders_date_range CHECK (order_last_updated_at >= order_created_at)
 );
 
