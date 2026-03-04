@@ -7,7 +7,7 @@
 #
 # Responsibilities:
 #   1. Read Bronze JSONL via read_bronze()
-#   2. Deduplicate on customer_id
+#   2. Deduplicate on customer_id, effective_start
 #   3. Validate — nulls and constraints
 #   4. Select only Silver-relevant columns
 #   5. Write clean Parquet to Silver layer
