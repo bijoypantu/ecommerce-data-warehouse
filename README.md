@@ -78,7 +78,12 @@ ecommerce-data-warehouse/
 │   │   │   ├── silver_fact_payments.py
 │   │   │   ├── silver_fact_shipments.py
 │   │   │   └── silver_fact_refunds.py
-│   │   └── gold/                # Gold layer transforms (upcoming)
+│   │   └── gold/                # Gold layer transforms
+│   │       ├── gold_fact_orders.py
+│   │       ├── gold_fact_order_items.py
+│   │       ├── gold_fact_payments.py
+│   │       ├── gold_fact_refunds.py
+│   │       └── gold_fact_customer_segment_snapshot.py
 │   ├── load/
 │   │   └── load_warehouse.py    # Warehouse loader (upcoming)
 │   └── utils/
@@ -205,6 +210,15 @@ python -m etl.transform.silver.silver_fact_shipments
 python -m etl.transform.silver.silver_fact_refunds
 ```
 
+### 9. Run Gold ETL
+```bash
+python -m etl.transform.gold.gold_fact_orders
+python -m etl.transform.gold.gold_fact_order_items
+python -m etl.transform.gold.gold_fact_payments
+python -m etl.transform.gold.gold_fact_refunds
+python -m etl.transform.gold.gold_fact_customer_segment_snapshot
+```
+
 ---
 
 ## Business Questions
@@ -229,8 +243,8 @@ See `warehouse/queries/business_questions.sql` for full queries.
 | 1 | Schema Design & Business Questions | ✅ Complete |
 | 2 | Data Generation — Bronze Layer | ✅ Complete |
 | 3 | Silver Layer ETL — Clean & Structure | ✅ Complete |
-| 4 | Gold Layer ETL — Enrich & Convert | 🔄 In Progress |
-| 5 | Warehouse Load | ⏳ Upcoming |
+| 4 | Gold Layer ETL — Enrich & Convert | ✅ Complete |
+| 5 | Warehouse Load | 🔄 In Progress |
 | 6 | Airflow Orchestration | ⏳ Upcoming |
 | 7 | Apache Spark ETL | ⏳ Upcoming |
 | 8 | Analytics & Dashboards | ⏳ Upcoming |
@@ -270,6 +284,11 @@ ORDER BY started_at DESC;
 **Centralized Bronze Reader** — `etl/extract/read_bronze.py` is the single entry point for all Bronze reads. Handles corrupt line skipping, timestamp parsing, and event_type filtering — DRY principle applied across all 8 Silver transforms.
 
 **Audit-First Pipeline** — Every ETL script wraps execution in `PipelineAuditor` — tracking row counts, data quality check results, and rejected records directly to PostgreSQL in real time.
+
+**Gold Layer Enrichment** — Currency conversion (_inr columns) happens 
+in Gold using daily exchange rates. fact_customer_segment_snapshot is 
+built entirely in Gold via LTM RFM aggregation across 63 monthly 
+snapshots. Dims and fact_shipments flow directly Silver → Loader.
 
 ---
 
