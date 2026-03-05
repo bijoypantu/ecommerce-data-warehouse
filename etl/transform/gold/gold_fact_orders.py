@@ -31,6 +31,10 @@ def run():
             on=["date_sk", "currency_code"],
             how="left"
         )
+        
+        # INR rate is always 1.0 — fill missing INR rates explicitly
+        df.loc[df["currency_code"] == "INR", "rate_to_inr"] = \
+        df.loc[df["currency_code"] == "INR", "rate_to_inr"].fillna(1.0)
 
         # After merge, rows with no rate match will have rate_to_inr = NaN
         missing_rate_mask = df["rate_to_inr"].isna()

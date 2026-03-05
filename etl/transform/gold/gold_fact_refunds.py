@@ -6,16 +6,15 @@ from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
-SILVER_PATH  = Path("data_lake/processed/fact_order_items.parquet")
-ORDERS_PATH  = Path("data_lake/processed/fact_orders.parquet")
-GOLD_PATH    = Path("data_lake/curated/fact_order_items.parquet")
-RATES_PATH   = Path("warehouse/seeds/all_currencies_to_inr.csv")
+SILVER_PATH = Path("data_lake/processed/fact_refunds.parquet")
+GOLD_PATH   = Path("data_lake/curated/fact_refunds.parquet")
+RATES_PATH  = Path("warehouse/seeds/all_currencies_to_inr.csv")
 
 
 def run():
     with PipelineAuditor(
-        pipeline_name="gold_fact_order_items",
-        table_name="fact_order_items",
+        pipeline_name="gold_fact_refunds",
+        table_name="fact_refunds",
         layer="gold"
     ) as auditor:
         
@@ -24,19 +23,13 @@ def run():
         rows_read = len(df)
         logger.info(f"Rows read from Silver: {rows_read}")
 
-        # In gold_fact_order_items.py
-        orders_df = pd.read_parquet(ORDERS_PATH)
-        df = df.merge(
-            orders_df[["order_id", "currency_code"]],
-            on="order_id",
-            how="left"
-        )
-
         # Read exchange rates
         rates_df = pd.read_csv(RATES_PATH)
+
+        rates_df = rates_df.rename(columns={"date_sk": "refund_date_sk"})
         df = df.merge(
-            rates_df[["date_sk", "currency_code", "rate_to_inr"]],
-            on=["date_sk", "currency_code"],
+            rates_df[["refund_date_sk", "currency_code", "rate_to_inr"]],
+            on=["refund_date_sk", "currency_code"],
             how="left"
         )
 
@@ -51,9 +44,9 @@ def run():
             logger.warning(f"Missing exchange rates: {missing_rate_mask.sum()} rows — _inr will be NULL")
 
         # NaN * anything = NaN — so _inr columns are automatically NULL for missing rates
-        df["line_total_amount_inr"]   = (df["line_total_amount"] * df["rate_to_inr"]).round(2)
+        df["refund_amount_inr"] = (df["refund_amount"] * df["rate_to_inr"]).round(2)
         
-        df = df.drop(columns=["rate_to_inr", "currency_code"])
+        df = df.drop(columns=["rate_to_inr"])
 
         GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(GOLD_PATH, index=False)
@@ -68,7 +61,7 @@ def run():
         )
 
         logger.info(
-            f"gold_fact_order_items complete | "
+            f"gold_fact_refunds complete | "
             f"read={rows_read} written={rows_written} rejected={rows_rejected}"
         )
 
