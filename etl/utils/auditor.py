@@ -202,9 +202,9 @@ class PipelineAuditor:
         Example:
             auditor.set_row_counts(rows_read=1000, rows_written=994, rows_rejected=6)
         """
-        self._rows_read     = rows_read
-        self._rows_written  = rows_written
-        self._rows_rejected = rows_rejected
+        self._rows_read     = int(rows_read)
+        self._rows_written  = int(rows_written)
+        self._rows_rejected = int(rows_rejected)
 
     # ----------------------------------------------------------
     # Data quality checks
