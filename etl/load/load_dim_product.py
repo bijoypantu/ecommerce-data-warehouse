@@ -15,6 +15,9 @@ def run(conn):
         layer="warehouse"
     ) as auditor:
         
+        # ------------------------------------------------------
+        # STEP 1: Read Silver Parquet
+        # ------------------------------------------------------
         prod_df = pd.read_parquet(DATA_PATH)
         rows_read = len(prod_df)
         logger.info(f"Rows read from Silver: {rows_read}")
@@ -23,6 +26,9 @@ def run(conn):
             ["product_id", "effective_start"]
         ).reset_index(drop=True)
 
+        # ------------------------------------------------------
+        # STEP 2: Insert orders
+        # ------------------------------------------------------
         with conn.cursor() as cur:
             cur.execute("""SELECT category_id, category_sk FROM dw.dim_category""")
             cat_lookup = {row[0]: row[1] for row in cur.fetchall()}
