@@ -75,7 +75,7 @@ def generate_customers():
         ])
         email = f"{email_prefix}@{random.choice(MAIL_DOMAINS)}"
 
-        mobile_no = f"{COUNTRY_MOBILE_CODE[country]}{fake.msisdn()[3:10]}"
+        mobile_no = f"{COUNTRY_MOBILE_CODE[country]}{fake.msisdn()[3:13]}"
 
         try:
             city = fake.city()
