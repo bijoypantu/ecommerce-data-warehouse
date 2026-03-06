@@ -40,8 +40,14 @@ def run():
         # After merge, rows with no rate match will have rate_to_inr = NaN
         missing_rate_mask = df["rate_to_inr"].isna()
         rows_rejected = missing_rate_mask.sum()
+        # Log rejected rows to audit.rejected_records
         if missing_rate_mask.sum() > 0:
-            logger.warning(f"Missing exchange rates: {missing_rate_mask.sum()} rows — _inr will be NULL")
+            for _, row in df[missing_rate_mask].iterrows():
+                auditor.log_rejected_record(
+                    record_id=str(row.get("refund_id", "UNKNOWN")),
+                    rejection_reason=f"missing exchange rate for {row['currency_code']} on {row['refund_date_sk']}",
+                    raw_data=row.to_dict()
+                )
 
         # NaN * anything = NaN — so _inr columns are automatically NULL for missing rates
         df["refund_amount_inr"] = (df["refund_amount"] * df["rate_to_inr"]).round(2)
