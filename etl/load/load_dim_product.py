@@ -27,7 +27,7 @@ def run(conn):
         ).reset_index(drop=True)
 
         # ------------------------------------------------------
-        # STEP 2: Insert orders
+        # STEP 2: Insert products
         # ------------------------------------------------------
         with conn.cursor() as cur:
             cur.execute("""SELECT category_id, category_sk FROM dw.dim_category""")
