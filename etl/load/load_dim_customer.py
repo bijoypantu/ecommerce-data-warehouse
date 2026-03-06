@@ -45,16 +45,6 @@ def run(conn):
         cust_df["effective_end"] = None
         cust_df["is_current"] = True
 
-        cust_rows = list(
-            cust_df[[
-                "customer_id", "first_name", "last_name",
-                "date_of_birth", "email", "mobile_no",
-                "city", "state", "country", "signup_timestamp",
-                "effective_start", "effective_end",
-                "is_current", "gender"
-            ]].itertuples(index=False, name=None)
-        )
-
         insert_sql = """
             INSERT INTO dw.dim_customer (
                 customer_id, first_name, last_name,
