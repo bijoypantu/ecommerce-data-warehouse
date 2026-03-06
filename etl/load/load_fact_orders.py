@@ -17,7 +17,7 @@ def run(conn):
     ) as auditor:
         
         # ------------------------------------------------------
-        # STEP 1: Read Silver Parquet
+        # STEP 1: Read Gold Parquet
         # ------------------------------------------------------
         ord_df = pd.read_parquet(DATA_PATH)
         rows_read = len(ord_df)
