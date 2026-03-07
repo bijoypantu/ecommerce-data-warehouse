@@ -21,7 +21,7 @@ def run(conn):
         # ------------------------------------------------------
         item_df = pd.read_parquet(DATA_PATH)
         rows_read = len(item_df)
-        logger.info(f"Rows read from Silver: {rows_read}")
+        logger.info(f"Rows read from Gold: {rows_read}")
 
         # ------------------------------------------------------
         # STEP 2: Insert order items
