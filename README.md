@@ -85,7 +85,16 @@ ecommerce-data-warehouse/
 │   │       ├── gold_fact_refunds.py
 │   │       └── gold_fact_customer_segment_snapshot.py
 │   ├── load/
-│   │   └── load_warehouse.py    # Warehouse loader (upcoming)
+│   │   ├── run_loader.py        # Master orchestration script
+│   │   ├── load_dim_category.py
+│   │   ├── load_dim_customer.py
+│   │   ├── load_dim_product.py
+│   │   ├── load_fact_orders.py
+│   │   ├── load_fact_order_items.py
+│   │   ├── load_fact_payments.py
+│   │   ├── load_fact_shipments.py
+│   │   ├── load_fact_refunds.py
+│   │   └── load_customer_segment_snapshot.py
 │   └── utils/
 │       ├── logger.py            # Shared logging setup
 │       └── auditor.py           # PipelineAuditor — audit trail writer
@@ -219,6 +228,12 @@ python -m etl.transform.gold.gold_fact_refunds
 python -m etl.transform.gold.gold_fact_customer_segment_snapshot
 ```
 
+### 10. Load the warehouse
+```bash
+python -m etl.load.run_loader
+```
+This runs all 9 loaders in dependency order, loading ~840K rows into the PostgreSQL star schema. Takes approximately 2-3 minutes.
+
 ---
 
 ## Business Questions
@@ -244,8 +259,8 @@ See `warehouse/queries/business_questions.sql` for full queries.
 | 2 | Data Generation — Bronze Layer | ✅ Complete |
 | 3 | Silver Layer ETL — Clean & Structure | ✅ Complete |
 | 4 | Gold Layer ETL — Enrich & Convert | ✅ Complete |
-| 5 | Warehouse Load | 🔄 In Progress |
-| 6 | Airflow Orchestration | ⏳ Upcoming |
+| 5 | Warehouse Load | ✅ Complete |
+| 6 | Airflow Orchestration | 🔄 In Progress |
 | 7 | Apache Spark ETL | ⏳ Upcoming |
 | 8 | Analytics & Dashboards | ⏳ Upcoming |
 | 9 | Documentation & Polish | ⏳ Upcoming |
