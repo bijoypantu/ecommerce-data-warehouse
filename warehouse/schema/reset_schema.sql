@@ -4,3 +4,5 @@
 -- ============================================================
 
 DROP SCHEMA IF EXISTS dw CASCADE;
+
+drop schema if exists audit cascade;

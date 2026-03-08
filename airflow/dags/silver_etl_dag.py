@@ -2,79 +2,59 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
 
-import sys
-sys.path.insert(0, "/opt/airflow/project")
-
-from etl.utils.auditor import _get_connection
 
 def run_silver_dim_category():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_dim_category import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 def run_silver_dim_customer():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_dim_customer import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 def run_silver_dim_product():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_dim_product import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 def run_silver_fact_orders():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_fact_orders import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 def run_silver_fact_order_items():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_fact_order_items import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 def run_silver_fact_payments():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_fact_payments import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 def run_silver_fact_shipments():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_fact_shipments import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 def run_silver_fact_refunds():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
     from etl.transform.silver.silver_fact_refunds import run
-    conn = _get_connection()
-    try:
-        run(conn)
-    finally:
-        conn.close()
+    run()
 
 # Define the DAG
 with DAG(
     dag_id="silver_etl_dag",
-    start_date=datetime(2026, 3, 10),
+    start_date=datetime(2026, 1, 1),
     schedule_interval="@weekly",
     catchup=False
 ) as dag:
