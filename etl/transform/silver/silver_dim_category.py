@@ -26,7 +26,8 @@ logger = get_logger(__name__)
 # ------------------------------------------------------------
 # Silver output path — single constant, easy to change
 # ------------------------------------------------------------
-SILVER_PATH = Path("data_lake/processed/dim_category.parquet")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "dim_category.parquet"
 
 
 def run():
@@ -126,11 +127,11 @@ def run():
         # mkdir parents=True means the folder is created if it
         # doesn't exist yet — safe to run on a fresh environment.
         # ------------------------------------------------------
-        SILVER_PATH.parent.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(SILVER_PATH, index=False)
+        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(OUTPUT_PATH, index=False)
 
         rows_written = len(df)
-        logger.info(f"Silver Parquet written: {SILVER_PATH} | rows={rows_written}")
+        logger.info(f"Silver Parquet written: {OUTPUT_PATH} | rows={rows_written}")
 
         # ------------------------------------------------------
         # STEP 6: Tell the auditor the final row counts.

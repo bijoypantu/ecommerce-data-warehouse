@@ -24,8 +24,9 @@ from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
-GOLD_ORDERS_PATH  = Path("data_lake/curated/fact_orders.parquet")
-GOLD_PATH         = Path("data_lake/curated/fact_customer_segment_snapshot.parquet")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+GOLD_ORDERS_PATH  = PROJECT_ROOT / "data_lake" / "curated" / "fact_orders.parquet"
+OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / "fact_customer_segment_snapshot.parquet"
 
 
 def run():
@@ -177,11 +178,11 @@ def run():
         # ------------------------------------------------------
         # STEP 7: Write to Gold curated layer
         # ------------------------------------------------------
-        GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(GOLD_PATH, index=False)
+        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(OUTPUT_PATH, index=False)
 
         rows_written = len(df)
-        logger.info(f"Gold Parquet written: {GOLD_PATH} | rows={rows_written}")
+        logger.info(f"Gold Parquet written: {OUTPUT_PATH} | rows={rows_written}")
 
         # ------------------------------------------------------
         # STEP 8: Tell the auditor the final row counts

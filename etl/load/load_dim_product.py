@@ -6,7 +6,8 @@ from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
-DATA_PATH = Path("data_lake/processed/dim_product.parquet")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_PATH = PROJECT_ROOT / "data_lake" / "processed" / "dim_product.parquet"
 
 def run(conn):
     with PipelineAuditor(

@@ -6,10 +6,10 @@ from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
-SILVER_PATH  = Path("data_lake/processed/fact_order_items.parquet")
-ORDERS_PATH  = Path("data_lake/processed/fact_orders.parquet")
-GOLD_PATH    = Path("data_lake/curated/fact_order_items.parquet")
-RATES_PATH   = Path("warehouse/seeds/all_currencies_to_inr.csv")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+INPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "fact_order_items.parquet"
+OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / "fact_order_items.parquet"
+RATES_PATH = PROJECT_ROOT / "warehouse" / "seeds" / "all_currencies_to_inr.csv"
 
 
 def run():
@@ -20,7 +20,7 @@ def run():
     ) as auditor:
         
         # Read Silver Parquet
-        df = pd.read_parquet(SILVER_PATH)
+        df = pd.read_parquet(INPUT_PATH)
         rows_read = len(df)
         logger.info(f"Rows read from Silver: {rows_read}")
 
@@ -61,11 +61,11 @@ def run():
         
         df = df.drop(columns=["rate_to_inr", "currency_code"])
 
-        GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(GOLD_PATH, index=False)
+        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(OUTPUT_PATH, index=False)
 
         rows_written = len(df)
-        logger.info(f"Gold Parquet written: {GOLD_PATH} | rows={rows_written}")
+        logger.info(f"Gold Parquet written: {OUTPUT_PATH} | rows={rows_written}")
 
         auditor.set_row_counts(
             rows_read=rows_read,

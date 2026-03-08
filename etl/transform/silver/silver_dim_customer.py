@@ -23,7 +23,8 @@ from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
-SILVER_PATH = Path("data_lake/processed/dim_customer.parquet")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "dim_customer.parquet"
 
 def run():
     with PipelineAuditor(
@@ -93,11 +94,11 @@ def run():
         # ------------------------------------------------------
         # STEP 5: Write to Silver as Parquet
         # ------------------------------------------------------
-        SILVER_PATH.parent.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(SILVER_PATH, index=False)
+        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(OUTPUT_PATH, index=False)
 
         rows_written = len(df)
-        logger.info(f"Silver Parquet written: {SILVER_PATH} | rows={rows_written}")
+        logger.info(f"Silver Parquet written: {OUTPUT_PATH} | rows={rows_written}")
 
         # ------------------------------------------------------
         # STEP 6: Tell the auditor the final row counts.

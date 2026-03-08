@@ -5,7 +5,8 @@ import pandas as pd
 from etl.utils.logger import get_logger
 from etl.utils.auditor import PipelineAuditor
 
-DATA_PATH = Path("data_lake/curated/fact_payments.parquet")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_PATH = PROJECT_ROOT / "data_lake" / "curated" / "fact_payments.parquet"
 
 logger = get_logger(__name__)
 

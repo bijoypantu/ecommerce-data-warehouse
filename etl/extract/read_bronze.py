@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 # Bronze layer root — single source of truth for all paths.
 # Change this one constant if the data lake location ever moves.
 # ------------------------------------------------------------
-BRONZE_ROOT = Path("data_lake/raw")
+BRONZE_ROOT = Path(__file__).resolve().parents[2] / "data_lake" / "raw"
 
 # ------------------------------------------------------------
 # Timestamp columns per file — parsed to datetime on read.
