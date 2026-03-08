@@ -75,7 +75,7 @@ with DAG(
         python_callable=run_silver_dim_product
     )
 
-    task_order = PythonOperator(
+    task_orders = PythonOperator(
         task_id="silver_fact_orders",
         python_callable=run_silver_fact_orders
     )
@@ -102,11 +102,11 @@ with DAG(
 
     # 3. Define dependencies
     task_category >> task_product
-    task_customer >> task_order
+    task_customer >> task_orders
 
     task_product >> task_order_items
-    task_order >> task_order_items
-    task_order >> task_payments
+    task_orders >> task_order_items
+    task_orders >> task_payments
 
     task_order_items >> task_shipments
     task_order_items >> task_refunds
