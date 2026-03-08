@@ -69,7 +69,7 @@ def run():
         months = pd.date_range(
             start=min_date.to_period("M").to_timestamp("M"),
             end=max_date.to_period("M").to_timestamp("M"),
-            freq="ME"
+            freq="M"
         )
         logger.info(f"Snapshot months to process: {len(months)} ({months[0].date()} → {months[-1].date()})")
 
