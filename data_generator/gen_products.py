@@ -29,7 +29,7 @@ def get_sub_categories(categories_df):
     return [
         (row["category_id"], row["category_name"])
         for _, row in categories_df.iterrows()
-        if row["parent_category_id"] is not None
+        if pd.notna(row["parent_category_id"])
     ]
 
 

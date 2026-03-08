@@ -16,12 +16,12 @@ SCD2_CUTOFF = date(2026, 1, 1)  # orders before this → 85/15 split
 # ------------------------------------------------------------
 # Volume constants
 # ------------------------------------------------------------
-NUM_CUSTOMERS   = 10_000
-NUM_PRODUCTS    = 1_000
-NUM_ORDERS      = 100_000
-REFUND_RATE     = 0.10   # 10% of delivered orders get refunds
-SCD2_CUST_RATE  = 0.05   # 5% of customers get a second version
-SCD2_PROD_RATE  = 0.20   # 20% of products get discontinued
+NUM_PRODUCTS    = 100
+NUM_CUSTOMERS   = 1_000
+NUM_ORDERS      = 10_000
+REFUND_RATE     = 0.10
+SCD2_CUST_RATE  = 0.05
+SCD2_PROD_RATE  = 0.20
 
 # ------------------------------------------------------------
 # Discount details
