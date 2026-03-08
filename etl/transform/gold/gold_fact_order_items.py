@@ -9,6 +9,7 @@ logger = get_logger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 INPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "fact_order_items.parquet"
 OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / "fact_order_items.parquet"
+ORDERS_PATH  = PROJECT_ROOT / "data_lake" / "curated" / "fact_orders.parquet"
 RATES_PATH = PROJECT_ROOT / "warehouse" / "seeds" / "all_currencies_to_inr.csv"
 
 
