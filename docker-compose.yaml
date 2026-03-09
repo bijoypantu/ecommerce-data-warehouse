@@ -58,6 +58,8 @@ x-airflow-common:
     DB_NAME: ${DB_NAME}
     DB_USER: ${DB_USER}
     DB_PASSWORD: ${DB_PASSWORD}
+    AIRFLOW__CELERY__WORKER_PREFETCH_MULTIPLIER: '1'
+    AIRFLOW__CORE__ENV_VAR_PREFIX: 'AIRFLOW_VAR_'
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
