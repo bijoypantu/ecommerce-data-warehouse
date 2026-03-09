@@ -25,9 +25,9 @@ This follows the **Medallion Architecture** (Bronze → Silver → Gold) used by
 | Data Lake | JSONL (Bronze), Parquet (Silver/Gold) |
 | Data Warehouse | PostgreSQL |
 | ETL Pipeline | Python, Pandas, Pyarrow |
-| Orchestration | Apache Airflow (upcoming) |
-| Big Data | Apache Spark (upcoming) |
+| Orchestration | Apache Airflow 2.8.1 |
 | Containerization | Docker |
+| Big Data | Apache Spark (upcoming) |
 | Version Control | Git, GitHub |
 
 ---
@@ -100,13 +100,17 @@ ecommerce-data-warehouse/
 │       └── auditor.py           # PipelineAuditor — audit trail writer
 │
 ├── airflow/
-│   └── dags/                    # Airflow DAGs (upcoming)
+│   └── dags/
+│       ├── silver_etl_dag.py    # Silver ETL — 8 tasks with parallel execution
+│       ├── gold_etl_dag.py      # Gold ETL — 5 tasks
+│       └── warehouse_load_dag.py # Warehouse load — 9 tasks
 │
 ├── spark/                       # PySpark ETL (upcoming)
 ├── tests/                       # Unit and integration tests (upcoming)
 ├── docs/
 │   └── db_schema.png            # ER diagram
 ├── logs/                        # Pipeline log files (gitignored)
+├── docker-compose.yaml          # Airflow + services orchestration
 ├── .env.example                 # Environment variable template
 └── requirements.txt             # Python dependencies
 ```
@@ -144,13 +148,14 @@ Star schema with 6 dimension tables and 6 fact tables.
 | Table | Rows | Notes |
 |---|---|---|
 | dim_category | 60 | 10 parents, 50 sub-categories |
-| dim_product | ~1,200 | 1,000 base + ~200 SCD2 versions |
-| dim_customer | ~10,500 | 10,000 base + 500 SCD2 versions |
-| fact_orders | ~367,000 | All events combined |
-| fact_order_items | ~180,000 | ~1.8 items per order average |
-| fact_payments | ~129,000 | Includes retry attempts |
-| fact_shipments | ~122,000 | One record per item per order |
-| fact_refunds | ~9,000 | ~10% of delivered orders |
+| dim_product | ~120 | 100 base + ~20 SCD2 versions |
+| dim_customer | ~1,050 | 1,000 base + 50 SCD2 versions |
+| fact_orders | ~9,985 | All events combined |
+| fact_order_items | ~18,029 | ~1.8 items per order average |
+| fact_payments | ~12,934 | Includes retry attempts |
+| fact_shipments | ~12,161 | One record per item per order |
+| fact_refunds | ~895 | ~10% of delivered orders |
+| fact_customer_segment_snapshot | ~29,451 | Monthly RFM snapshots |
 
 ---
 
@@ -183,11 +188,12 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edit .env with your PostgreSQL credentials
+# Also add AIRFLOW_UID=50000 for Airflow Docker setup
 ```
 
 ### 5. Start PostgreSQL with Docker
 ```bash
-docker compose up -d
+docker compose up -d postgres
 ```
 
 ### 6. Initialize the warehouse schema
@@ -205,7 +211,7 @@ warehouse/seeds/dim_exchange_rate_seed.py
 python -m data_generator.run_generator
 ```
 
-This generates ~800K rows across 8 JSONL files in `data_lake/raw/`. Takes approximately 10 minutes.
+This generates ~85K rows across 8 JSONL files in `data_lake/raw/`. Takes approximately 2 minutes.
 
 ### 8. Run Silver ETL
 ```bash
@@ -232,7 +238,19 @@ python -m etl.transform.gold.gold_fact_customer_segment_snapshot
 ```bash
 python -m etl.load.run_loader
 ```
-This runs all 9 loaders in dependency order, loading ~840K rows into the PostgreSQL star schema. Takes approximately 2-3 minutes.
+This runs all 9 loaders in dependency order. Takes approximately 1 minute.
+
+### 11. Start Airflow
+```bash
+docker compose up -d
+```
+
+Wait for all containers to become healthy, then open `http://localhost:8080`.
+
+Enable and trigger DAGs in this order:
+1. `silver_etl_dag`
+2. `gold_etl_dag`
+3. `warehouse_load_dag`
 
 ---
 
@@ -260,10 +278,11 @@ See `warehouse/queries/business_questions.sql` for full queries.
 | 3 | Silver Layer ETL — Clean & Structure | ✅ Complete |
 | 4 | Gold Layer ETL — Enrich & Convert | ✅ Complete |
 | 5 | Warehouse Load | ✅ Complete |
-| 6 | Airflow Orchestration | 🔄 In Progress |
-| 7 | Apache Spark ETL | ⏳ Upcoming |
-| 8 | Analytics & Dashboards | ⏳ Upcoming |
-| 9 | Documentation & Polish | ⏳ Upcoming |
+| 6 | Airflow Orchestration | ✅ Complete |
+| 7 | Incremental Architecture Redesign | 🔄 In Progress |
+| 8 | Apache Spark ETL | ⏳ Upcoming |
+| 9 | Analytics & Dashboards | ⏳ Upcoming |
+| 10 | Documentation & Polish | ⏳ Upcoming |
 
 ---
 
@@ -300,14 +319,13 @@ ORDER BY started_at DESC;
 
 **Audit-First Pipeline** — Every ETL script wraps execution in `PipelineAuditor` — tracking row counts, data quality check results, and rejected records directly to PostgreSQL in real time.
 
-**Gold Layer Enrichment** — Currency conversion (_inr columns) happens 
-in Gold using daily exchange rates. fact_customer_segment_snapshot is 
-built entirely in Gold via LTM RFM aggregation across 63 monthly 
-snapshots. Dims and fact_shipments flow directly Silver → Loader.
+**Gold Layer Enrichment** — Currency conversion (_inr columns) happens in Gold using daily exchange rates. `fact_customer_segment_snapshot` is built entirely in Gold via LTM RFM aggregation across 63 monthly snapshots. Dims and `fact_shipments` flow directly Silver → Loader.
+
+**Airflow Orchestration** — Three separate DAGs for Silver, Gold, and Warehouse Load provide independent scheduling, monitoring, and reprocessing per layer. Tasks within each DAG run in parallel where FK dependencies allow, matching the same dependency order as manual execution. All DAGs run inside Docker via the official Airflow 2.8.1 CeleryExecutor setup.
 
 ---
 
 ## Author
 
-**Bijoy Pantu** \
+**Bijoy Pantu**  
 **Data Engineering Portfolio Project**
