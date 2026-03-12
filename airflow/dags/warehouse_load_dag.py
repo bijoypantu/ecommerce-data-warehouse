@@ -103,7 +103,7 @@ def run_load_fact_customer_segment_snapshot():
 
 with DAG(
     dag_id="warehouse_load_etl_dag",
-    start_date=datetime(2026, 1, 1),
+    start_date=datetime(2026, 3, 12),
     schedule_interval=None,
     catchup=False
 ) as dag:
