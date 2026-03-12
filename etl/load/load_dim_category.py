@@ -18,14 +18,13 @@ from pathlib import Path
 import pandas as pd
 from psycopg2.extras import execute_values
 
+from etl.extract.read_silver import read_silver
 from etl.utils.logger import get_logger
 from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_PATH = PROJECT_ROOT / "data_lake" / "processed" / "dim_category.parquet"
-
 
 def run(conn):
     with PipelineAuditor(
@@ -37,7 +36,7 @@ def run(conn):
         # ------------------------------------------------------
         # STEP 1: Read Silver Parquet
         # ------------------------------------------------------
-        df = pd.read_parquet(DATA_PATH)
+        df, execution_date = read_silver("dim_category")
         rows_read = len(df)
         logger.info(f"Rows read from Silver: {rows_read}")
 

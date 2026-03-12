@@ -14,13 +14,13 @@
 import pandas as pd
 from pathlib import Path
 
+from etl.extract.read_silver import read_silver
 from etl.utils.logger import get_logger
 from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_PATH = PROJECT_ROOT / "data_lake" / "processed" / "dim_customer.parquet"
 
 def run(conn):
     with PipelineAuditor(
@@ -32,7 +32,7 @@ def run(conn):
         # ------------------------------------------------------
         # STEP 1: Read Silver Parquet
         # ------------------------------------------------------
-        cust_df = pd.read_parquet(DATA_PATH)
+        cust_df, execution_date = read_silver("dim_customer")
         rows_read = len(cust_df)
         logger.info(f"Rows read from Silver: {rows_read}")
 

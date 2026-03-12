@@ -2,11 +2,11 @@ from pathlib import Path
 from psycopg2.extras import execute_values
 import pandas as pd
 
+from etl.extract.read_gold import read_gold
 from etl.utils.logger import get_logger
 from etl.utils.auditor import PipelineAuditor
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_PATH = PROJECT_ROOT / "data_lake" / "curated" / "fact_payments.parquet"
 
 logger = get_logger(__name__)
 
@@ -20,7 +20,7 @@ def run(conn):
         # ------------------------------------------------------
         # STEP 1: Read Gold Parquet
         # ------------------------------------------------------
-        pay_df = pd.read_parquet(DATA_PATH)
+        pay_df, execution_date = read_gold("fact_payments")
         rows_read = len(pay_df)
         logger.info(f"Rows read from Gold: {rows_read}")
 
