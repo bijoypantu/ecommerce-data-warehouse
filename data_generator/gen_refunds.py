@@ -26,7 +26,7 @@ def generate_refunds(conn, generation_date):
         SELECT
             fo.order_id,
             fo.order_created_at,
-            fo.customer_id,
+            (SELECT customer_id FROM dw.dim_customer dc WHERE dc.customer_sk = fo.customer_sk) as customer_id,
             fo.currency_code,
             foi.order_item_id,
             foi.quantity,
@@ -140,16 +140,18 @@ def generate_refunds(conn, generation_date):
     # ----------------------------------------------------------
     sql = """
         SELECT
-            refund_id,
-            order_id,
-            order_item_id,
-            customer_id,
-            initiated_at,
-            refund_quantity,
-            refund_amount,
-            refund_reason,
-            currency_code
+            fr.refund_id,
+            fo.order_id,
+            foi.order_item_id,
+            (SELECT customer_id FROM dw.dim_customer dc WHERE dc.customer_sk = fo.customer_sk) as customer_id,
+            fr.initiated_at,
+            fr.refund_quantity,
+            fr.refund_amount,
+            fr.refund_reason,
+            fr.currency_code
         FROM dw.fact_refunds fr
+        JOIN dw.fact_orders fo ON fo.order_sk = fr.order_sk
+        JOIN dw.fact_order_items foi ON fr.order_item_sk = foi.order_item_sk
         WHERE fr.refund_status = 'initiated'
     """
 

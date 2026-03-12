@@ -36,7 +36,7 @@ def generate_shipments(conn, generation_date):
             SELECT
                 fo.order_id,
                 fo.order_created_at,
-                fo.customer_id,
+                (SELECT customer_id FROM dw.dim_customer dc WHERE dc.customer_sk = fo.customer_sk) as customer_id,
                 fo.order_channel,
                 fo.total_order_amount,
                 fo.order_discount_total,
@@ -125,11 +125,11 @@ def generate_shipments(conn, generation_date):
     sql = """
             SELECT
                 fs.shipment_id,
-                fs.order_item_id,
+                foi.order_item_id,
                 fs.shipped_at,
                 fo.order_id,
                 fo.order_created_at,
-                fo.customer_id,
+                (SELECT customer_id FROM dw.dim_customer dc WHERE dc.customer_sk = fo.customer_sk) as customer_id,
                 fo.order_channel,
                 fo.total_order_amount,
                 fo.order_discount_total,

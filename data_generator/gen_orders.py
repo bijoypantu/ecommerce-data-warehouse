@@ -10,12 +10,23 @@ import random
 import pandas as pd
 from datetime import date, datetime, timezone, timedelta
 
+from etl.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
 from .config import (
     COUNTRY_CURRENCY
 )
 from .db import random_datetime_between
 
 def generate_orders(conn, generation_date):
+    with conn.cursor() as cur:
+        cur.execute("SELECT customer_id, country FROM dw.dim_customer WHERE is_current = True")
+        res = {row[0]:row[1] for row in cur.fetchall()}
+
+    if not res:
+        logger.info("  No customers in warehouse yet — skipping order generation")
+        return pd.DataFrame()
     
     print("\n[fact_orders] Generating orders...")
 
@@ -33,10 +44,6 @@ def generate_orders(conn, generation_date):
         cur.execute("SELECT MAX(CAST(SUBSTRING(order_id FROM 6) AS INTEGER)) FROM dw.fact_orders")
         result = cur.fetchone()[0]
     start_index = (result or 0) + 1
-
-    with conn.cursor() as cur:
-        cur.execute("SELECT customer_id, country FROM dw.dim_customer WHERE is_current = True")
-        res = {row[0]:row[1] for row in cur.fetchall()}
 
     rows = []
     

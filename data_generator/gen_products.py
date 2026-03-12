@@ -13,23 +13,12 @@ from faker import Faker
 from dateutil.relativedelta import relativedelta
 
 from .config import (
-    CATEGORIES, BRANDS, COLORS, SIZES
+    BRANDS, COLORS, SIZES
 )
 from .db import random_datetime, random_datetime_between
 
 fake = Faker()
 
-
-def get_sub_categories(categories_df):
-    """
-    Extracts sub-categories from the categories DataFrame.
-    Returns list of (category_id, category_name) tuples.
-    """
-    return [
-        (row["category_id"], row["category_name"])
-        for _, row in categories_df.iterrows()
-        if pd.notna(row["parent_category_id"])
-    ]
 
 
 def generate_products(conn, categories_df, generation_date):
@@ -39,7 +28,7 @@ def generate_products(conn, categories_df, generation_date):
     gen_dt      = datetime.combine(generation_date, datetime.min.time()).replace(tzinfo=timezone.utc)
     ingested_at = datetime.now(timezone.utc).isoformat()
 
-    sub_categories = get_sub_categories(categories_df)
+    sub_categories = list(zip(categories_df["category_id"], categories_df["category_name"]))
     # ----------------------------------------------------------
     # Get current max customer number from warehouse
     # so new IDs continue from where we left off
