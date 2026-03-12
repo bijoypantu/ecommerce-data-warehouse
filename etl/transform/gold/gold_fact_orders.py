@@ -1,14 +1,13 @@
 from pathlib import Path
 import pandas as pd
 
+from etl.extract.read_silver import read_silver
 from etl.utils.logger import get_logger
 from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-INPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "fact_orders.parquet"
-OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / "fact_orders.parquet"
 RATES_PATH = PROJECT_ROOT / "warehouse" / "seeds" / "all_currencies_to_inr.csv"
 
 
@@ -20,9 +19,10 @@ def run():
     ) as auditor:
         
         # Read Silver Parquet
-        df = pd.read_parquet(INPUT_PATH)
+        df, execution_date = read_silver("fact_orders")
         rows_read = len(df)
         logger.info(f"Rows read from Silver: {rows_read}")
+        OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / execution_date / "fact_orders.parquet"
 
         # Read exchange rates
         rates_df = pd.read_csv(RATES_PATH)

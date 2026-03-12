@@ -19,15 +19,13 @@
 from pathlib import Path
 import pandas as pd
 
+from etl.extract.read_gold import read_gold
 from etl.utils.logger import get_logger
 from etl.utils.auditor import PipelineAuditor
 
 logger = get_logger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-ORDERS_PATH  = PROJECT_ROOT / "data_lake" / "curated" / "fact_orders.parquet"
-OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / "fact_customer_segment_snapshot.parquet"
-
 
 def run():
     with PipelineAuditor(
@@ -41,9 +39,11 @@ def run():
         # Filter to delivered orders only — segment snapshots
         # are based on realized revenue, not pending orders.
         # ------------------------------------------------------
-        orders_df = pd.read_parquet(ORDERS_PATH)
+        orders_df, execution_date = read_gold("fact_orders")
         rows_read = len(orders_df)
         logger.info(f"Rows read from Gold fact_orders: {rows_read}")
+
+        OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / execution_date / "fact_customer_segment_snapshot.parquet"
 
         delivered_df = orders_df[orders_df["order_status"] == "delivered"].copy()
         logger.info(f"Delivered orders filtered: {len(delivered_df)}")
