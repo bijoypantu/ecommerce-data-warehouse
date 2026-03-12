@@ -13,13 +13,13 @@
 # ============================================================
 
 import json
-import os
 from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
 
 from etl.utils.logger import get_logger
+from etl.utils.auditor import _get_connection
 
 logger = get_logger(__name__)
 
@@ -44,41 +44,35 @@ TIMESTAMP_COLUMNS: dict[str, list[str]] = {
     "fact_refunds":      ["initiated_at", "processed_at", "ingested_at"],
 }
 
+conn = _get_connection()
+
+def get_last_generation_date() -> str:
+    sql = """
+        SELECT CAST(MAX(started_at)::date AS VARCHAR)
+        FROM audit.pipeline_runs
+        WHERE layer='generation' AND status = 'success'
+    """
+    conn = _get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            res = cur.fetchone()[0]
+        if res is None:
+            raise RuntimeError("No successful data_generator run found in audit table.")
+        return res
+    finally:
+        conn.close()
 
 def read_bronze(
     filename: str,
     event_type: Optional[Union[str, list[str]]] = None,
+    execution_date: Optional[str] = None,
 ) -> pd.DataFrame:
-    """
-    Reads a Bronze JSONL file into a clean, typed DataFrame.
+    
+    if execution_date is None:
+        execution_date = get_last_generation_date()
 
-    Args:
-        filename   : Name of the JSONL file WITHOUT extension.
-                     e.g. "fact_orders", "dim_customer"
-        event_type : Optional filter. Pass a single string or a list.
-                     e.g. "order_created"
-                     e.g. ["order_shipped", "order_delivered"]
-                     If None, all rows are returned.
-
-    Returns:
-        pd.DataFrame — clean, typed, optionally filtered.
-
-    Raises:
-        FileNotFoundError — if the JSONL file does not exist.
-
-    Usage:
-        from etl.extract.read_bronze import read_bronze
-
-        # All customer events
-        df = read_bronze("dim_customer")
-
-        # Only delivered order events
-        df = read_bronze("fact_orders", event_type="order_delivered")
-
-        # Both shipped and delivered
-        df = read_bronze("fact_orders", event_type=["order_shipped", "order_delivered"])
-    """
-    filepath = BRONZE_ROOT / f"{filename}.jsonl"
+    filepath = BRONZE_ROOT / execution_date / f"{filename}.jsonl"
 
     # ----------------------------------------------------------
     # Guard: file must exist before we attempt to read it
@@ -167,4 +161,4 @@ def read_bronze(
         + (f" | event_type={event_type}" if event_type else "")
     )
 
-    return df
+    return df, execution_date

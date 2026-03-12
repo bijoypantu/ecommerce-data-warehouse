@@ -26,7 +26,6 @@ logger = get_logger(__name__)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "fact_orders.parquet"
 
 # NOT NULL columns — validated in bulk
 NOT_NULL_COLS = [
@@ -51,9 +50,11 @@ def run():
         # fact_orders.jsonl contains 6 mixed event types.
         # We read all of them — dedup resolves to final state.
         # ------------------------------------------------------
-        df = read_bronze("fact_orders")
+        df, execution_date = read_bronze("fact_orders")
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
+        
+        OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / execution_date / "fact_orders.parquet"
 
         # ------------------------------------------------------
         # STEP 2: Deduplicate — keep latest event per order_id

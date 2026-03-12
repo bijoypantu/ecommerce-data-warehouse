@@ -25,7 +25,6 @@ logger = get_logger(__name__)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "dim_product.parquet"
 
 def run():
     with PipelineAuditor (
@@ -37,9 +36,11 @@ def run():
         # ------------------------------------------------------
         # STEP 1: Read Bronze
         # ------------------------------------------------------
-        df = read_bronze("dim_product")
+        df, execution_date = read_bronze("dim_product")
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
+        
+        OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / execution_date / "dim_product.parquet"
         
         # ------------------------------------------------------
         # STEP 2: Deduplicate on product_id, effective_start

@@ -27,14 +27,8 @@ logger = get_logger(__name__)
 # Silver output path — single constant, easy to change
 # ------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / "dim_category.parquet"
-
 
 def run():
-    """
-    Entry point for the Silver dim_category transform.
-    Called directly or by Airflow in Phase 6.
-    """
 
     # ----------------------------------------------------------
     # Start audit run — every pipeline execution is tracked.
@@ -52,9 +46,11 @@ def run():
         # dim_category only has one event type: "created"
         # No filter needed — all rows are valid for Silver
         # ------------------------------------------------------
-        df = read_bronze("dim_category")
+        df, execution_date = read_bronze("dim_category")
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
+
+        OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "processed" / execution_date / "dim_category.parquet"
 
         # ------------------------------------------------------
         # STEP 2: Deduplicate on category_id
