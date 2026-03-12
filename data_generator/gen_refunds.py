@@ -10,7 +10,7 @@ import pandas as pd
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
-from .config import REFUND_RATE, REFUND_REASONS
+from .config import REFUND_REASONS
 from .db import random_datetime_between
 
 def generate_refunds(conn, generation_date):
@@ -66,7 +66,7 @@ def generate_refunds(conn, generation_date):
 
     # Randomly select 10% of orders to refund
     all_order_ids  = list(items_by_order.keys())
-    num_refunds    = int(len(all_order_ids) * REFUND_RATE)
+    num_refunds    = int(len(all_order_ids) * 0.10)
     orders_to_refund = random.sample(all_order_ids, num_refunds)
 
     rows = []
