@@ -7,52 +7,79 @@
 
 import random
 import pandas as pd
-from datetime import date, datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
 from .config import REFUND_RATE, REFUND_REASONS
 from .db import random_datetime_between
 
-
-def generate_refunds(delivered_shipments_df, items_df):
-    """
-    Generates fact_refunds DataFrame.
-    10% of delivered orders get refunded.
-    Returns refunds_df.
-    """
-
+def generate_refunds(conn, generation_date):
     print("\n[fact_refunds] Generating refunds...")
 
+    gen_dt      = datetime.combine(generation_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    ingested_at = datetime.now(timezone.utc).isoformat()
+
     # ----------------------------------------------------------
-    # Group items by order_id for quantity and price lookup
+    # PHASE 1 — refund 10% of delivered orders
     # ----------------------------------------------------------
+    sql = """
+        SELECT
+            fo.order_id,
+            fo.order_created_at,
+            fo.customer_id,
+            fo.currency_code,
+            foi.order_item_id,
+            foi.quantity,
+            foi.unit_price_at_order,
+            foi.discount_amount
+        FROM dw.fact_orders fo
+        JOIN dw.fact_order_items foi ON fo.order_sk = foi.order_sk
+        WHERE fo.order_status = 'delivered'
+        AND fo.order_last_updated_at >= NOW() - INTERVAL '3 days'
+        AND fo.order_id NOT IN (SELECT order_id FROM dw.fact_refunds)
+    """
+
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        delivered_rows = cur.fetchall()
+    
+    # Group items by order_id
     items_by_order = defaultdict(list)
-    for _, item in items_df.iterrows():
-        items_by_order[item["order_id"]].append(item)
+    order_meta     = {}
 
-    # ----------------------------------------------------------
-    # Group delivered shipments by order_id
-    # ----------------------------------------------------------
-    shipments_by_order = defaultdict(list)
-    for _, shipment in delivered_shipments_df.iterrows():
-        shipments_by_order[shipment["order_id"]].append(shipment)
+    for row in delivered_rows:
+        (order_id, order_created_at, customer_id, currency_code,
+         order_item_id, quantity, unit_price_at_order,
+         discount_amount) = row
+        
+        items_by_order[order_id].append({
+            "order_item_id":       order_item_id,
+            "quantity":            quantity,
+            "unit_price_at_order": unit_price_at_order,
+            "discount_amount":    discount_amount,
+        })
+        order_meta[order_id] = {
+            "order_created_at":     order_created_at,
+            "customer_id":          customer_id,
+            "currency_code":        currency_code,
+        }
 
-    # ----------------------------------------------------------
-    # Pick 10% of unique delivered orders for refund
-    # ----------------------------------------------------------
-    unique_order_ids = list(shipments_by_order.keys())
-    num_refunds      = int(len(unique_order_ids) * REFUND_RATE)
-    orders_to_refund = random.sample(unique_order_ids, num_refunds)
+    # Randomly select 10% of orders to refund
+    all_order_ids  = list(items_by_order.keys())
+    num_refunds    = int(len(all_order_ids) * REFUND_RATE)
+    orders_to_refund = random.sample(all_order_ids, num_refunds)
 
     rows = []
 
     for order_id in orders_to_refund:
-        shipment_rows = shipments_by_order[order_id]
-        delivered_at  = shipment_rows[0]["delivered_at"]
-        currency_code = shipment_rows[0]["currency_code"]
-        customer_id   = shipment_rows[0]["customer_id"]
-
+        meta       = order_meta[order_id]
         order_items = items_by_order[order_id]
+
+        initiated_at = random_datetime_between(
+            gen_dt,
+            gen_dt + timedelta(hours=23)
+        )
+
 
         # Decide refund type
         refund_type = random.choices(
@@ -69,34 +96,11 @@ def generate_refunds(delivered_shipments_df, items_df):
             items_to_refund = [random.choice(order_items)]
 
         for idx, item in enumerate(items_to_refund, 1):
-            order_item_id       = item["order_item_id"]
-            quantity            = item["quantity"]
+            quantity = item["quantity"]
             unit_price_at_order = item["unit_price_at_order"]
+            discount_amount = item["discount_amount"]
 
             refund_id    = f"REF-{order_id}-{idx}"
-            initiated_at = random_datetime_between(
-                delivered_at,
-                delivered_at + timedelta(days=3)
-            )
-
-            # Refund status based on delivery date
-            if delivered_at.date() < date(2026, 2, 1):
-                refund_status = random.choices(
-                    ["processed", "rejected"],
-                    weights=[0.80, 0.20], k=1
-                )[0]
-            else:
-                refund_status = random.choices(
-                    ["processed", "approved", "initiated", "rejected"],
-                    weights=[0.60, 0.15, 0.15, 0.10], k=1
-                )[0]
-
-            processed_at = None
-            if refund_status == "processed":
-                processed_at = random_datetime_between(
-                    initiated_at,
-                    initiated_at + timedelta(days=7)
-                )
 
             # Refund quantity
             if refund_type == "partial_item":
@@ -107,10 +111,70 @@ def generate_refunds(delivered_shipments_df, items_df):
             else:
                 refund_quantity = quantity
 
-            refund_amount = round(refund_quantity * unit_price_at_order, 2)
+            discount_per_unit = discount_amount / quantity if quantity > 0 else 0
+            refund_amount = round((refund_quantity * unit_price_at_order) - (refund_quantity * discount_per_unit), 2)
+
             refund_reason = random.choice(REFUND_REASONS)
 
             rows.append({
+                "refund_id":          refund_id,
+                "order_id":           order_id,
+                "order_item_id":      item["order_item_id"],
+                "customer_id":        meta["customer_id"],
+                "initiated_at":       initiated_at,
+                "processed_at":       None,
+                "refund_quantity":    refund_quantity,
+                "refund_amount":      refund_amount,
+                "refund_reason":      refund_reason,
+                "refund_status":      "initiated",
+                "currency_code":      meta["currency_code"],
+                "refund_amount_inr":  None,
+                "event_type":         "refund_initiated",
+                "ingested_at":        ingested_at,
+            })
+        
+    # ----------------------------------------------------------
+    # PHASE 2 — Choose 80% random refund requests
+    # 1. Reject 30% of those requests
+    # 2. Accept 70% of those requests
+    # ----------------------------------------------------------
+    sql = """
+        SELECT
+            refund_id,
+            order_id,
+            order_item_id,
+            customer_id,
+            initiated_at,
+            refund_quantity,
+            refund_amount,
+            refund_reason,
+            currency_code
+        FROM dw.fact_refunds fr
+        WHERE fr.refund_status = 'initiated'
+    """
+
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        refund_rows = cur.fetchall()
+    
+    num_to_refund = int(len(refund_rows) * 0.80)
+    rows_to_refund = random.sample(refund_rows, num_to_refund)
+
+    for row in rows_to_refund:
+        (refund_id, order_id, order_item_id, customer_id, initiated_at,
+        refund_quantity, refund_amount, refund_reason, currency_code) = row
+
+        processed_at = random_datetime_between(
+            initiated_at,
+            initiated_at + timedelta(days=3)
+        )
+
+        status = random.choices(
+            ["processed", "rejected"],
+            weights=[0.7, 0.3], k=1
+        )[0]
+
+        rows.append({
                 "refund_id":          refund_id,
                 "order_id":           order_id,
                 "order_item_id":      order_item_id,
@@ -120,14 +184,16 @@ def generate_refunds(delivered_shipments_df, items_df):
                 "refund_quantity":    refund_quantity,
                 "refund_amount":      refund_amount,
                 "refund_reason":      refund_reason,
-                "refund_status":      refund_status,
+                "refund_status":      status,
                 "currency_code":      currency_code,
                 "refund_amount_inr":  None,
-                "event_type":         "refund_initiated",
-                "ingested_at":        datetime.now(timezone.utc).isoformat(),
+                "event_type":         "refund_processed",
+                "ingested_at":        ingested_at,
             })
-
+    
     refunds_df = pd.DataFrame(rows)
 
     print(f"  Done. {len(refunds_df)} refund records generated.")
+    print(f"  {num_refunds} refunds initiated, {num_to_refund} refunds processed.")
+
     return refunds_df
