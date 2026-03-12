@@ -12,22 +12,27 @@ from .config import (
     PRICE_RANGES,
     DISCOUNT_TIERS, DISCOUNT_WEIGHTS,
 )
-from .db import resolve_product_at_time, date_to_sk
+from .db import date_to_sk
 
 
-def generate_order_items(orders_df, product_versions, rate_lookup):
-    """
-    Generates and inserts fact_order_items rows.
-    total ~1,20,000 order items
-    """
-
+def generate_order_items(conn, orders_df, rate_lookup):
+   
     print("\n[fact_order_items] Generating order items...")
 
 
     # ------------------------------------------------------
-    # PASS 1: Generate ~1,20,000 order items
+    # PASS 1: Generate order items for present day orders
     # ------------------------------------------------------
     rows = []
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT dp.product_id, dc.category_name
+            FROM dw.dim_product dp
+            JOIN dw.dim_category dc ON dp.category_sk = dc.category_sk
+            WHERE dp.is_current = true
+        """)
+        active_products = cur.fetchall()
 
     for _, order in orders_df.iterrows():
         order_id         = order["order_id"]
@@ -35,18 +40,12 @@ def generate_order_items(orders_df, product_versions, rate_lookup):
         order_created_at = order["order_created_at"]
         currency_code    = order["currency_code"]
 
-        item_count = random.choices([1, 2, 3, 4], weights=[0.5, 0.3, 0.1, 0.1], k=1)[0]
+        item_count = random.choices([1, 2, 3, 4], weights=[0.4, 0.3, 0.2, 0.1], k=1)[0]
         for j in range(1, item_count + 1):
             order_item_id = f"ITEM-{order_id}-{j}"  # unique per order
             
-            # Resolve product active at order time
-            product_id, category_name = resolve_product_at_time(
-                product_versions, order_created_at
-            )
-            # Skip if no product found for this timestamp
-            if product_id is None:
-                continue
-            
+            product_id, category_name = random.choice(active_products)
+
             date_sk = date_to_sk(order_created_at.date())
             rate = rate_lookup.get((date_sk, currency_code), 1)
             unit_price_inr = round(random.uniform(*PRICE_RANGES[category_name]), 2)
