@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator #type: ignore
 from datetime import datetime
 
 def run_load_dim_category():
@@ -104,7 +104,7 @@ def run_load_fact_customer_segment_snapshot():
 with DAG(
     dag_id="warehouse_load_etl_dag",
     start_date=datetime(2026, 1, 1),
-    schedule_interval="@weekly",
+    schedule_interval=None,
     catchup=False
 ) as dag:
 

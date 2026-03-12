@@ -1,5 +1,6 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator #type: ignore
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator #type: ignore
 from datetime import datetime
 
 def run_gold_fact_orders():
@@ -35,8 +36,8 @@ def run_gold_fact_customer_segment_snapshot():
 # Define the DAG
 with DAG(
     dag_id="gold_etl_dag",
-    start_date=datetime(2026, 1, 1),
-    schedule_interval="@weekly",
+    start_date=datetime(2026, 3, 12),
+    schedule_interval=None,
     catchup=False
 ) as dag:
 
@@ -66,6 +67,17 @@ with DAG(
         python_callable=run_gold_fact_customer_segment_snapshot
     )
 
+    trigger_load = TriggerDagRunOperator(
+        task_id="trigger_load_etl",
+        trigger_dag_id="warehouse_load_dag",
+        wait_for_completion=False
+    )
+
     # 3. Define dependencies
     task_orders >> task_order_items
     task_orders >> task_cust_segments
+
+    task_order_items >> trigger_load
+    task_cust_segments >> trigger_load
+    task_payments >> trigger_load
+    task_refunds >> trigger_load
