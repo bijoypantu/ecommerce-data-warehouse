@@ -17,12 +17,6 @@ from .db import random_datetime_between
 
 
 def generate_payments(orders_df):
-    """
-    Generates fact_payments DataFrame.
-    Determines order cancellation and processing status.
-    Appends status events to orders_df.
-    Returns payments_df, orders_df.
-    """
 
     print("\n[fact_payments] Generating payments...")
 
