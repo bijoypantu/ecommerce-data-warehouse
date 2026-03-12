@@ -11,7 +11,6 @@
 #   - Optionally filters by one or more event_type values
 #   - Logs every read with row counts for auditability
 # ============================================================
-
 import json
 from pathlib import Path
 from typing import Optional, Union
