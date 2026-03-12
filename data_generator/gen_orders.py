@@ -8,60 +8,60 @@
 
 import random
 import pandas as pd
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 
 from .config import (
-    NUM_ORDERS, COUNTRY_CURRENCY
+    COUNTRY_CURRENCY
 )
-from .db import random_datetime, resolve_customer_at_time
+from .db import random_datetime_between
 
-def generate_orders(customer_versions):
-    """
-    Generates all orders as "order_created" events.
-    No status distribution — that happens in payments and shipments.
-    Returns orders_df.
-    """
-
+def generate_orders(conn, generation_date):
+    
     print("\n[fact_orders] Generating orders...")
 
-    rows = []
+    gen_dt      = datetime.combine(generation_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    ingested_at = datetime.now(timezone.utc).isoformat()
 
-    for i in range(1, NUM_ORDERS + 1):
+    with conn.cursor() as cur:
+        cur.execute("""SELECT COUNT(DISTINCT customer_id) FROM dw.dim_customer""")
+        total_customers = cur.fetchone()[0]
+    
+    daily_rate = random.uniform(0.10, 0.20)
+    num_orders = max(10, int(total_customers * daily_rate))
+    
+    with conn.cursor() as cur:
+        cur.execute("SELECT MAX(CAST(SUBSTRING(order_id FROM 6) AS INTEGER)) FROM dw.fact_orders")
+        result = cur.fetchone()[0]
+    start_index = (result or 0) + 1
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT customer_id, country FROM dw.dim_customer WHERE is_current = True")
+        res = {row[0]:row[1] for row in cur.fetchall()}
+
+    rows = []
+    
+    for i in range(start_index, start_index + num_orders):
         order_id = f"ORD-{i:05d}"
 
-        # Generate order creation datetime
-        year = random.choices(
-            [2021, 2022, 2023, 2024, 2025, 2026],
-            weights=[0.05, 0.10, 0.15, 0.20, 0.35, 0.15],
-            k=1
-        )[0]
-
-        if year == 2026:
-            order_created_at = random_datetime(date(2026, 1, 1), date(2026, 3, 1))
-        else:
-            order_created_at = random_datetime(date(year, 1, 1), date(year, 12, 31))
-
-        # Resolve customer active at order time
-        customer_id, country = resolve_customer_at_time(
-            customer_versions, order_created_at
+        order_created_at = random_datetime_between(
+            gen_dt,
+            gen_dt + timedelta(hours=23)
         )
+        order_last_updated_at = order_created_at
+        order_status = "created"
+        order_channel = random.choice(["web", "mobile", "marketplace"])
 
-        # Handle edge case where no customer found
-        if customer_id is None:
-            continue
-
-        # Derive currency from customer's country
+        customer_id = random.choice(list(res.keys()))
+        country = res[customer_id]
         currency_code = COUNTRY_CURRENCY[country]
 
-        # Order channel
-        order_channel = random.choice(["web", "mobile", "marketplace"])
 
         rows.append({
             "order_id":            order_id,
             "customer_id":         customer_id,
             "order_created_at":    order_created_at,
-            "order_last_updated_at": order_created_at,  # placeholder
-            "order_status":        "created",
+            "order_last_updated_at": order_last_updated_at,  # placeholder
+            "order_status":        order_status,
             "order_channel":       order_channel,
             "total_order_amount":  0,           # updated by gen_order_items
             "order_discount_total": 0,          # updated by gen_order_items
@@ -69,7 +69,7 @@ def generate_orders(customer_versions):
             "total_order_amount_inr":   None,   # calculated in ETL
             "order_discount_total_inr": None,   # calculated in ETL
             "event_type":          "order_created",
-            "ingested_at":         datetime.now(timezone.utc).isoformat(),
+            "ingested_at":         ingested_at,
         })
 
     df = pd.DataFrame(rows)
