@@ -21,6 +21,9 @@ def run():
         # Read Silver Parquet
         try:
             df, execution_date = read_silver("fact_payments")
+            if df.empty:
+                logger.info("No payments records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_payments.parquet not found for this date — skipping")
             return

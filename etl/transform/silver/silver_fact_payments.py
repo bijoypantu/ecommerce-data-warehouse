@@ -49,6 +49,9 @@ def run():
         # ------------------------------------------------------
         try:
             df, execution_date = read_bronze("fact_payments")
+            if df.empty:
+                logger.info("No payment records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_payments.jsonl not found for this date — skipping")
             return

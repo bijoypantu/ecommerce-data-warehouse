@@ -41,6 +41,9 @@ def run():
         # ------------------------------------------------------
         try:
             orders_df, execution_date = read_gold("fact_orders")
+            if orders_df.empty:
+                logger.info("No records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_orders.parquet not found for this date — skipping")
             return
@@ -50,6 +53,9 @@ def run():
         OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / execution_date / "fact_customer_segment_snapshot.parquet"
 
         delivered_df = orders_df[orders_df["order_status"] == "delivered"].copy()
+        if delivered_df.empty:
+            logger.info("No delivered orders for this date — skipping snapshot")
+            return
         logger.info(f"Delivered orders filtered: {len(delivered_df)}")
 
         # Convert date_sk (int YYYYMMDD) to actual date for window calculations

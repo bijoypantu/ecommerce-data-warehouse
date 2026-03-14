@@ -20,9 +20,12 @@ def run():
         
         # Read Silver Parquet
         try:
-            df, execution_date = read_silver("fact_orders")
+            df, execution_date = read_silver("fact_refunds")
+            if df.empty:
+                logger.info("No refunds records for this date — skipping")
+                return
         except FileNotFoundError:
-            logger.info("fact_orders.parquet not found for this date — skipping")
+            logger.info("fact_refunds.parquet not found for this date — skipping")
             return
         rows_read = len(df)
         logger.info(f"Rows read from Silver: {rows_read}")

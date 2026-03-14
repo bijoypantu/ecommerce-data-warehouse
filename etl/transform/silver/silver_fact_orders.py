@@ -52,6 +52,9 @@ def run():
         # ------------------------------------------------------
         try:
             df, execution_date = read_bronze("fact_orders")
+            if df.empty:
+                logger.info("No order records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_orders.jsonl not found for this date — skipping")
             return
