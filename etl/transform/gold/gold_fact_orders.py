@@ -19,7 +19,11 @@ def run():
     ) as auditor:
         
         # Read Silver Parquet
-        df, execution_date = read_silver("fact_orders")
+        try:
+            df, execution_date = read_silver("fact_orders")
+        except FileNotFoundError:
+            logger.info("fact_orders.parquet not found for this date — skipping")
+            return
         rows_read = len(df)
         logger.info(f"Rows read from Silver: {rows_read}")
         OUTPUT_PATH = PROJECT_ROOT / "data_lake" / "curated" / execution_date / "fact_orders.parquet"

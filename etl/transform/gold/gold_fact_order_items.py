@@ -19,7 +19,11 @@ def run():
     ) as auditor:
         
         # Read Silver Parquet
-        df, execution_date = read_silver("fact_order_items")
+        try:
+            df, execution_date = read_silver("fact_order_items")
+        except FileNotFoundError:
+            logger.info("fact_order_items.parquet not found for this date — skipping")
+            return
         rows_read = len(df)
         logger.info(f"Rows read from Silver: {rows_read}")
 

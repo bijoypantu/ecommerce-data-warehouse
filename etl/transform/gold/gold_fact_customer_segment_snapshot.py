@@ -39,7 +39,11 @@ def run():
         # Filter to delivered orders only — segment snapshots
         # are based on realized revenue, not pending orders.
         # ------------------------------------------------------
-        orders_df, execution_date = read_gold("fact_orders")
+        try:
+            orders_df, execution_date = read_gold("fact_orders")
+        except FileNotFoundError:
+            logger.info("fact_orders.parquet not found for this date — skipping")
+            return
         rows_read = len(orders_df)
         logger.info(f"Rows read from Gold fact_orders: {rows_read}")
 
