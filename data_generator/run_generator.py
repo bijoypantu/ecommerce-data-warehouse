@@ -18,7 +18,7 @@
 # ============================================================
 
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .db import write_jsonl, get_connection
@@ -59,7 +59,7 @@ def get_generation_date(conn) -> datetime.date:
         next_date = result[0] + timedelta(days=1)
         logger.info(f"Last generation date found: {result[0]} → generating for {next_date}")
     else:
-        next_date = datetime.now().date()
+        next_date = datetime.now(timezone.utc).date()
         logger.info(f"No prior generation found → using today: {next_date}")
 
     return next_date
