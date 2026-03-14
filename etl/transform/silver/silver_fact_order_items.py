@@ -47,7 +47,11 @@ def run():
         # fact_order_items.jsonl contains a single event type: order_item_created.
         # Dedup guards against duplicate writes only.
         # ------------------------------------------------------
-        df, execution_date = read_bronze("fact_order_items")
+        try:
+            df, execution_date = read_bronze("fact_order_items")
+        except FileNotFoundError:
+            logger.info("fact_order_items.jsonl not found for this date — skipping")
+            return
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
         

@@ -46,7 +46,11 @@ def run():
         # dim_category only has one event type: "created"
         # No filter needed — all rows are valid for Silver
         # ------------------------------------------------------
-        df, execution_date = read_bronze("dim_category")
+        try:
+            df, execution_date = read_bronze("dim_category")
+        except FileNotFoundError:
+            logger.info("dim_category.jsonl not found for this date — skipping")
+            return
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
 

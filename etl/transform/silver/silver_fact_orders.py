@@ -50,7 +50,11 @@ def run():
         # fact_orders.jsonl contains 6 mixed event types.
         # We read all of them — dedup resolves to final state.
         # ------------------------------------------------------
-        df, execution_date = read_bronze("fact_orders")
+        try:
+            df, execution_date = read_bronze("fact_orders")
+        except FileNotFoundError:
+            logger.info("fact_orders.jsonl not found for this date — skipping")
+            return
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
         

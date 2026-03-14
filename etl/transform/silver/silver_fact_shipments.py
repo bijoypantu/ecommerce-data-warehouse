@@ -46,7 +46,11 @@ def run():
         # ------------------------------------------------------
         # STEP 1: Read Bronze
         # ------------------------------------------------------
-        df, execution_date = read_bronze("fact_shipments")
+        try:
+            df, execution_date = read_bronze("fact_shipments")
+        except FileNotFoundError:
+            logger.info("fact_shipments.jsonl not found for this date — skipping")
+            return
         rows_read = len(df)
         logger.info(f"Rows read from Bronze: {rows_read}")
         
