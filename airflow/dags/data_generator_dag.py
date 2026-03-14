@@ -3,6 +3,11 @@ from airflow.operators.python import PythonOperator #type: ignore
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator #type: ignore
 from datetime import datetime
 
+def run_exchange_rate_seed():
+    import sys
+    sys.path.insert(0, "/opt/airflow/project")
+    from warehouse.seeds.dim_exchange_rate_seed import main
+    main()
 
 def run_data_generator():
     import sys
@@ -18,6 +23,10 @@ with DAG(
     catchup=False
 ) as dag:
     
+    task_exchange_rate = PythonOperator(
+        task_id="seed_exchange_rates",
+        python_callable=run_exchange_rate_seed
+    )
     
     task_generator = PythonOperator(
         task_id="run_generator",
@@ -30,4 +39,5 @@ with DAG(
         wait_for_completion=False
     )
 
+    task_exchange_rate >> task_generator
     task_generator >> trigger_silver
