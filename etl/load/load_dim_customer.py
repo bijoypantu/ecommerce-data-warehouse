@@ -34,6 +34,9 @@ def run(conn):
         # ------------------------------------------------------
         try:
             cust_df, _ = read_silver("dim_customer")
+            if cust_df.empty:
+                logger.info("No customer records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("dim_customer.parquet not found — skipping")
             return

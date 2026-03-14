@@ -22,6 +22,9 @@ def run(conn):
         # ------------------------------------------------------
         try:
             ref_df, _ = read_gold("fact_refunds")
+            if ref_df.empty:
+                logger.info("No refund records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_refunds.parquet not found — skipping")
             return

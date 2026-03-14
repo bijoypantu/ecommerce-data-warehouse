@@ -21,6 +21,9 @@ def run(conn):
         # ------------------------------------------------------
         try:
             prod_df, _ = read_silver("dim_product")
+            if prod_df.empty:
+                logger.info("No product records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("dim_product.parquet not found — skipping")
             return

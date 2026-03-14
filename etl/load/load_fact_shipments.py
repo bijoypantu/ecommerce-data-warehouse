@@ -22,6 +22,9 @@ def run(conn):
         # ------------------------------------------------------
         try:
             ship_df, _ = read_silver("fact_shipments")
+            if ship_df.empty:
+                logger.info("No shipment records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_shipments.parquet not found — skipping")
             return

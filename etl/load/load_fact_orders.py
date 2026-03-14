@@ -22,6 +22,9 @@ def run(conn):
         # ------------------------------------------------------
         try:
             ord_df, _ = read_gold("fact_orders")
+            if ord_df.empty:
+                logger.info("No order records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_orders.parquet not found — skipping")
             return

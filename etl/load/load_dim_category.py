@@ -38,6 +38,9 @@ def run(conn):
         # ------------------------------------------------------
         try:
             df, _ = read_silver("dim_category")
+            if df.empty:
+                logger.info("No category records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("dim_category.parquet not found — skipping")
             return

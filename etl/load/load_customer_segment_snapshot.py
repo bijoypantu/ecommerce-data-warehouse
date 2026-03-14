@@ -22,6 +22,9 @@ def run(conn):
         # ------------------------------------------------------
         try:
             segment_df, _ = read_gold("fact_customer_segment_snapshot")
+            if segment_df.empty:
+                logger.info("No segment records for this date — skipping")
+                return
         except FileNotFoundError:
             logger.info("fact_customer_segment_snapshot.parquet not found — skipping")
             return
