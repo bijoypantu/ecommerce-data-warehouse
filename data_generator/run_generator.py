@@ -205,22 +205,17 @@ def generate():
             write_jsonl(product_df, OUTPUT_DIR / "dim_product.jsonl")
 
         write_jsonl(customer_df,  OUTPUT_DIR / "dim_customer.jsonl")
-        if not orders_df.empty:
-            write_jsonl(orders_df, OUTPUT_DIR / "fact_orders.jsonl")
-        if not items_df.empty:    
-            write_jsonl(items_df,     OUTPUT_DIR / "fact_order_items.jsonl")
-        if not payments_df.empty:
-            write_jsonl(payments_df,  OUTPUT_DIR / "fact_payments.jsonl")
-        if not shipments_df.empty:
-            write_jsonl(shipments_df, OUTPUT_DIR / "fact_shipments.jsonl")
-        if not refunds_df.empty:
-            write_jsonl(refunds_df,   OUTPUT_DIR / "fact_refunds.jsonl")
+        write_jsonl(orders_df,    OUTPUT_DIR / "fact_orders.jsonl")
+        write_jsonl(items_df,     OUTPUT_DIR / "fact_order_items.jsonl")
+        write_jsonl(payments_df,  OUTPUT_DIR / "fact_payments.jsonl")
+        write_jsonl(shipments_df, OUTPUT_DIR / "fact_shipments.jsonl")
+        write_jsonl(refunds_df,   OUTPUT_DIR / "fact_refunds.jsonl")
 
         # ----------------------------------------------------------
         # AUDIT — record total rows generated
         # ----------------------------------------------------------
         total_rows = (
-            len(category_df) +
+            (len(category_df) if count == 0 else 0) +
             (len(product_df) if product_df is not None else 0) +
             len(customer_df) +
             len(orders_df) +
@@ -245,7 +240,7 @@ def generate():
         logger.info("=" * 60)
         logger.info("  Generation Complete")
         logger.info(f"  Generation date: {generation_date}")
-        logger.info(f"  Categories:   {len(category_df):>8,} rows")
+        logger.info(f"  Categories:   {(len(category_df) if count == 0 else 0):>8,} rows")
         logger.info(f"  Products:     {len(product_df) if product_df is not None else 0:>8,} rows")
         logger.info(f"  Customers:    {len(customer_df):>8,} rows")
         logger.info(f"  Orders:       {len(orders_df):>8,} rows (all events)")
