@@ -20,7 +20,11 @@ def run(conn):
         # ------------------------------------------------------
         # STEP 1: Read Gold Parquet
         # ------------------------------------------------------
-        segment_df, execution_date = read_gold("fact_customer_segment_snapshot")
+        try:
+            segment_df, _ = read_gold("fact_customer_segment_snapshot")
+        except FileNotFoundError:
+            logger.info("fact_customer_segment_snapshot.parquet not found — skipping")
+            return
         rows_read = len(segment_df)
         logger.info(f"Rows read from Gold: {rows_read}")
         segment_df["snapshot_month"] = pd.to_datetime(segment_df["snapshot_month"])

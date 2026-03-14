@@ -20,7 +20,11 @@ def run(conn):
         # ------------------------------------------------------
         # STEP 1: Read Silver Parquet
         # ------------------------------------------------------
-        ship_df, execution_date = read_silver("fact_shipments")
+        try:
+            ship_df, _ = read_silver("fact_shipments")
+        except FileNotFoundError:
+            logger.info("fact_shipments.parquet not found — skipping")
+            return
         rows_read = len(ship_df)
         logger.info(f"Rows read from Silver: {rows_read}")
 

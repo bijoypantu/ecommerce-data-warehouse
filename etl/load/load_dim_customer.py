@@ -32,7 +32,11 @@ def run(conn):
         # ------------------------------------------------------
         # STEP 1: Read Silver Parquet
         # ------------------------------------------------------
-        cust_df, execution_date = read_silver("dim_customer")
+        try:
+            cust_df, _ = read_silver("dim_customer")
+        except FileNotFoundError:
+            logger.info("dim_customer.parquet not found — skipping")
+            return
         rows_read = len(cust_df)
         logger.info(f"Rows read from Silver: {rows_read}")
 

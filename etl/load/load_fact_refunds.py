@@ -20,7 +20,11 @@ def run(conn):
         # ------------------------------------------------------
         # STEP 1: Read Gold Parquet
         # ------------------------------------------------------
-        ref_df, execution_date = read_gold("fact_refunds")
+        try:
+            ref_df, _ = read_gold("fact_refunds")
+        except FileNotFoundError:
+            logger.info("fact_refunds.parquet not found — skipping")
+            return
         rows_read = len(ref_df)
         logger.info(f"Rows read from Gold: {rows_read}")
 
