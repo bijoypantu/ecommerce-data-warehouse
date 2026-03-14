@@ -43,8 +43,6 @@ TIMESTAMP_COLUMNS: dict[str, list[str]] = {
     "fact_refunds":      ["initiated_at", "processed_at", "ingested_at"],
 }
 
-conn = _get_connection()
-
 def get_last_generation_date() -> str:
     sql = """
         SELECT CAST(MAX(started_at)::date AS VARCHAR)
@@ -117,7 +115,7 @@ def read_bronze(
     # ----------------------------------------------------------
     if not records:
         logger.warning(f"No valid records found in {filename}.jsonl — returning empty DataFrame.")
-        return pd.DataFrame()
+        return pd.DataFrame(), execution_date
 
     df = pd.DataFrame(records)
     rows_before_filter = len(df)
