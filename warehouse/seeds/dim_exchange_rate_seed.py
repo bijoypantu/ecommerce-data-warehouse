@@ -24,6 +24,7 @@ Install dependencies:
 
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 import yfinance as yf
 import pandas as pd
@@ -41,9 +42,10 @@ DB_CONFIG = {
     "password": os.getenv("DB_PASSWORD")
 }
 
-START_DATE  = "2000-01-01"
+START_DATE  = "2020-01-01"
 END_DATE    = datetime.today().strftime("%Y-%m-%d")
-OUTPUT_FILE = "all_currencies_to_inr.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_FILE = PROJECT_ROOT / "warehouse" / "seeds" / "all_currencies_to_inr.csv"
 
 # Yahoo Finance direct tickers: XXXINR=X → how many INR per 1 XXX
 DIRECT_CURRENCIES = {
