@@ -69,7 +69,7 @@ with DAG(
 
     trigger_load = TriggerDagRunOperator(
         task_id="trigger_load_etl",
-        trigger_dag_id="warehouse_load_dag",
+        trigger_dag_id="warehouse_load_etl_dag",
         wait_for_completion=False
     )
 
