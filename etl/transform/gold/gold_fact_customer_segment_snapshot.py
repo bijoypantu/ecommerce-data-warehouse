@@ -18,6 +18,8 @@
 
 from pathlib import Path
 import pandas as pd
+import calendar
+from datetime import date
 
 from etl.extract.read_gold import read_gold
 from etl.utils.logger import get_logger
@@ -28,6 +30,13 @@ logger = get_logger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 def run():
+    partitions = sorted((PROJECT_ROOT / "data_lake" / "curated").glob("????-??-??"))
+    today = date.fromisoformat(partitions[-1].name)
+    last_day = calendar.monthrange(today.year, today.month)[1]
+
+    if today.day != last_day:
+        logger.info(f"Not end of month ({today}) — skipping")
+        return
     with PipelineAuditor(
         pipeline_name="gold_fact_customer_segment_snapshot",
         table_name="fact_customer_segment_snapshot",
