@@ -39,29 +39,17 @@ logger = get_logger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def get_generation_date(conn) -> datetime.date:
-    """
-    Detects the next generation date from the audit table.
-    First run → today's date.
-    Subsequent runs → last successful generation date + 1 day.
-    """
-    sql = """
-        SELECT MAX(started_at)::date
-        FROM audit.pipeline_runs
-        WHERE pipeline_name = 'data_generator'
-        AND status = 'success'
-    """
-    with conn.cursor() as cur:
-        cur.execute(sql)
-        result = cur.fetchone()
+BRONZE_ROOT = PROJECT_ROOT / "data_lake" / "raw"
 
-    if result and result[0]:
-        next_date = result[0] + timedelta(days=1)
-        logger.info(f"Last generation date found: {result[0]} → generating for {next_date}")
-    else:
+def get_generation_date() -> datetime.date:
+    partitions = sorted(BRONZE_ROOT.glob("????-??-??"))
+    if not partitions:
         next_date = datetime.now(timezone.utc).date()
-        logger.info(f"No prior generation found → using today: {next_date}")
-
+        logger.info(f"No prior Bronze partition found → using today: {next_date}")
+    else:
+        last_date = datetime.strptime(partitions[-1].name, "%Y-%m-%d").date()
+        next_date = last_date + timedelta(days=1)
+        logger.info(f"Last Bronze partition: {last_date} → generating for {next_date}")
     return next_date
 
 
@@ -76,7 +64,7 @@ def generate():
     # Detect generation date from audit table
     # ----------------------------------------------------------
     conn = get_connection()
-    generation_date = get_generation_date(conn)
+    generation_date = get_generation_date()
 
     OUTPUT_DIR = PROJECT_ROOT / "data_lake" / "raw" / generation_date.isoformat()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

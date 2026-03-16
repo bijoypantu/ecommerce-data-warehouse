@@ -44,21 +44,10 @@ TIMESTAMP_COLUMNS: dict[str, list[str]] = {
 }
 
 def get_last_generation_date() -> str:
-    sql = """
-        SELECT CAST(MAX(started_at)::date AS VARCHAR)
-        FROM audit.pipeline_runs
-        WHERE layer='generation' AND status = 'success'
-    """
-    conn = _get_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            res = cur.fetchone()[0]
-        if res is None:
-            raise RuntimeError("No successful data_generator run found in audit table.")
-        return res
-    finally:
-        conn.close()
+    partitions = sorted(BRONZE_ROOT.glob("????-??-??"))
+    if not partitions:
+        raise RuntimeError("No Bronze partitions found.")
+    return partitions[-1].name
 
 def read_bronze(
     filename: str,

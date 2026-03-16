@@ -27,21 +27,11 @@ SILVER_ROOT = Path(__file__).resolve().parents[2] / "data_lake" / "processed"
 
 
 def get_last_silver_date() -> str:
-    sql = """
-        SELECT CAST(MAX(started_at)::date AS VARCHAR)
-        FROM audit.pipeline_runs
-        WHERE layer='silver' AND status = 'success'
-    """
-    conn = _get_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            res = cur.fetchone()[0]
-        if res is None:
-            raise RuntimeError("No successful silver run found in audit table.")
-        return res
-    finally:
-        conn.close()
+    partitions = sorted(SILVER_ROOT.glob("????-??-??"))
+    if not partitions:
+        raise RuntimeError("No Silver partitions found.")
+    return partitions[-1].name
+
 
 def read_silver(
     filename: str,
