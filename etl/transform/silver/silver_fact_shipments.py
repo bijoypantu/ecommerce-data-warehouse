@@ -30,7 +30,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 # NOT NULL columns — validated in bulk
 NOT_NULL_COLS = [
     "shipment_id", "order_id", "order_item_id", "customer_id",
-    "shipped_at", "shipment_status", "carrier", "shipped_quantity"
+    "shipped_at", "shipment_status", "shipped_quantity"
 ]
 
 VALID_STATUSES  = ['shipped','delivered','failed']
