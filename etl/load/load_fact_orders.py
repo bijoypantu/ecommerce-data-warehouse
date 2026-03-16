@@ -75,7 +75,7 @@ def run(conn):
         )
 
         insert_sql = """
-            INSERT INTO dw.fact_orders(
+            INSERT INTO dw.fact_orders (
                 order_id, customer_sk, date_sk,
                 order_created_at, order_last_updated_at,
                 order_status, order_channel,
@@ -84,7 +84,13 @@ def run(conn):
                 order_discount_total_inr
             )
             VALUES %s
-            ON CONFLICT (order_id) DO NOTHING
+            ON CONFLICT (order_id) DO UPDATE SET
+                order_status = EXCLUDED.order_status,
+                order_last_updated_at = EXCLUDED.order_last_updated_at,
+                total_order_amount = EXCLUDED.total_order_amount,
+                order_discount_total = EXCLUDED.order_discount_total,
+                total_order_amount_inr = EXCLUDED.total_order_amount_inr,
+                order_discount_total_inr = EXCLUDED.order_discount_total_inr
         """
 
         try:

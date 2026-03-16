@@ -65,7 +65,10 @@ def run(conn):
                 tracking_id, shipped_quantity
             )
             VALUES %s
-            ON CONFLICT (order_item_sk, shipment_id) DO NOTHING
+            ON CONFLICT (order_item_sk, shipment_id) DO UPDATE SET
+                shipment_status = EXCLUDED.shipment_status,
+                delivered_at = EXCLUDED.delivered_at,
+                delivery_date_sk = EXCLUDED.delivery_date_sk
         """
 
         try:

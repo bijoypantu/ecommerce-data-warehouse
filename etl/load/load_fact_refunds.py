@@ -66,7 +66,9 @@ def run(conn):
                 refund_amount_inr
             )
             VALUES %s
-            ON CONFLICT (order_item_sk, refund_id) DO NOTHING
+            ON CONFLICT (order_item_sk, refund_id) DO UPDATE SET
+                refund_status = EXCLUDED.refund_status,
+                processed_at = EXCLUDED.processed_at
         """
 
         try:
