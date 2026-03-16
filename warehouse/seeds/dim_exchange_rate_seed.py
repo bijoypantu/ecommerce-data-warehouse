@@ -30,7 +30,7 @@ import yfinance as yf
 import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_values
-from datetime import datetime
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -43,7 +43,7 @@ DB_CONFIG = {
 }
 
 START_DATE  = "2020-01-01"
-END_DATE    = datetime.today().strftime("%Y-%m-%d")
+END_DATE = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_FILE = PROJECT_ROOT / "warehouse" / "seeds" / "all_currencies_to_inr.csv"
 
@@ -156,7 +156,7 @@ def generate_inr(start_date, end_date):
 
 def forward_fill(df, currency_code):
     """Fill gaps (weekends, holidays) with the last known rate."""
-    full_range = pd.date_range(start=df.index.min(), end=df.index.max(), freq="D")
+    full_range = pd.date_range(start=df.index.min(), end=END_DATE, freq="D")  # extend to END_DATE
     df = df.reindex(full_range)
     df.index.name = "date"
     df["currency_code"] = df["currency_code"].ffill()
