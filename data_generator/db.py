@@ -158,11 +158,8 @@ def resolve_product_at_time(product_versions, target_dt):
     return None, None
 
 def write_jsonl(df, filepath):
-    """
-    Writes a pandas DataFrame to a JSONL file.
-    Each row becomes one JSON line with proper datetime serialization.
-    """
     import json
+    import decimal
     from pathlib import Path
     
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
@@ -173,6 +170,8 @@ def write_jsonl(df, filepath):
             for col, val in row.items():
                 if hasattr(val, 'isoformat'):
                     record[col] = val.isoformat()
+                elif isinstance(val, decimal.Decimal):
+                    record[col] = float(val)
                 elif val is None or (isinstance(val, float) and pd.isna(val)):
                     record[col] = None
                 else:
