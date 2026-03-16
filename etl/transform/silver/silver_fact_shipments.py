@@ -63,7 +63,7 @@ def run():
         # STEP 2: Deduplicate
         # ------------------------------------------------------
         before_dedup = rows_read
-        df = df.drop_duplicates(subset=["order_item_id", "shipment_id"], keep="first")
+        df = df.sort_values("shipped_at").drop_duplicates(subset=["order_item_id", "shipment_id"], keep="last")
         after_dedup = len(df)
 
         dupes_dropped = before_dedup - after_dedup
