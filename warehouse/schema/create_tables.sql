@@ -247,7 +247,7 @@ CREATE TABLE dw.fact_shipments (
     shipped_at          TIMESTAMPTZ NOT NULL,
     delivered_at        TIMESTAMPTZ NULL,
     shipment_status     VARCHAR(10) NOT NULL,
-    carrier             VARCHAR(50) NOT NULL,
+    carrier             VARCHAR(50),
     tracking_id         VARCHAR(100) NULL,
     shipped_quantity    INT NOT NULL,
 
