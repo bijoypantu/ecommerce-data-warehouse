@@ -1,19 +1,20 @@
 # E-Commerce Data Warehouse
 
-A production-grade end-to-end data engineering project simulating a real-world e-commerce data platform. Built from scratch covering schema design, data generation, medallion architecture, ETL pipeline, orchestration, and analytics.
+A production-grade end-to-end data engineering project simulating a real-world e-commerce data platform. Built from scratch covering schema design, data generation, medallion architecture, incremental ETL pipeline, orchestration, and analytics.
 
 ---
 
 ## Architecture
 ```
-Source System          Bronze Layer           Silver Layer          Gold Layer            Warehouse
-──────────────         ────────────           ────────────          ──────────            ─────────
-data_generator/   →    data_lake/raw/    →    data_lake/       →    data_lake/       →    PostgreSQL
-(Faker + Pandas)       (JSONL files)          processed/            curated/              (Star Schema)
-                                              (Parquet files)       (Parquet files)
+Source System          Bronze Layer                Silver Layer              Gold Layer                Warehouse
+──────────────         ────────────                ────────────              ──────────                ─────────
+data_generator/   →    data_lake/raw/         →    data_lake/           →    data_lake/           →    PostgreSQL
+(Faker + Pandas)       YYYY-MM-DD/                 processed/               curated/                  (Star Schema)
+                       (JSONL files)               YYYY-MM-DD/              YYYY-MM-DD/
+                                                   (Parquet files)          (Parquet files)
 ```
 
-This follows the **Medallion Architecture** (Bronze → Silver → Gold) used by modern data platforms like Databricks, AWS, and Azure Data Lake.
+This follows the **Medallion Architecture** (Bronze → Silver → Gold) used by modern data platforms like Databricks, AWS, and Azure Data Lake. Each layer is **date-partitioned** for incremental daily processing.
 
 ---
 
@@ -49,9 +50,12 @@ ecommerce-data-warehouse/
 │   └── run_generator.py         # Master orchestration script
 │
 ├── data_lake/
-│   ├── raw/                     # Bronze layer — JSONL event files
-│   ├── processed/               # Silver layer — cleaned Parquet files
-│   └── curated/                 # Gold layer — business-ready Parquet files
+│   ├── raw/                     # Bronze layer — date-partitioned JSONL event files
+│   │   └── YYYY-MM-DD/
+│   ├── processed/               # Silver layer — date-partitioned cleaned Parquet files
+│   │   └── YYYY-MM-DD/
+│   └── curated/                 # Gold layer — date-partitioned business-ready Parquet files
+│       └── YYYY-MM-DD/
 │
 ├── warehouse/
 │   ├── schema/
@@ -63,11 +67,13 @@ ecommerce-data-warehouse/
 │   │   └── business_questions.sql  # 6 analytical queries
 │   └── seeds/
 │       ├── dim_date_seed.sql        # Populates dim_date 2000-2035
-│       └── dim_exchange_rate_seed.py # Populates exchange rates via yfinance
+│       └── dim_exchange_rate_seed.py # Populates daily exchange rates via yfinance
 │
 ├── etl/
 │   ├── extract/
-│   │   └── read_bronze.py       # Centralized Bronze JSONL reader
+│   │   ├── read_bronze.py       # Centralized Bronze JSONL reader with date partition detection
+│   │   ├── read_silver.py       # Centralized Silver Parquet reader with date partition detection
+│   │   └── read_gold.py         # Centralized Gold Parquet reader with date partition detection
 │   ├── transform/
 │   │   ├── silver/              # Silver layer transforms
 │   │   │   ├── silver_dim_category.py
@@ -101,9 +107,10 @@ ecommerce-data-warehouse/
 │
 ├── airflow/
 │   └── dags/
-│       ├── silver_etl_dag.py    # Silver ETL — 8 tasks with parallel execution
-│       ├── gold_etl_dag.py      # Gold ETL — 5 tasks
-│       └── warehouse_load_dag.py # Warehouse load — 9 tasks
+│       ├── data_generator_dag.py  # Daily generator — seeds exchange rates then generates Bronze
+│       ├── silver_etl_dag.py      # Silver ETL — 8 tasks with parallel execution
+│       ├── gold_etl_dag.py        # Gold ETL — 5 tasks
+│       └── warehouse_load_dag.py  # Warehouse load — 9 tasks
 │
 ├── spark/                       # PySpark ETL (upcoming)
 ├── tests/                       # Unit and integration tests (upcoming)
@@ -126,8 +133,8 @@ Star schema with 6 dimension tables and 6 fact tables.
 |---|---|---|
 | `dim_date` | Date dimension 2000-2035 | Static |
 | `dim_currency` | 16 supported currencies | Static |
-| `dim_exchange_rate` | Daily exchange rates to INR | Static |
-| `dim_category` | Product categories (2-level hierarchy) | Static |
+| `dim_exchange_rate` | Daily exchange rates to INR | Daily incremental |
+| `dim_category` | Product categories (2-level hierarchy) | One-time seed |
 | `dim_product` | Products with brand, model, size | SCD Type 2 |
 | `dim_customer` | Customers with location | SCD Type 2 |
 
@@ -143,19 +150,35 @@ Star schema with 6 dimension tables and 6 fact tables.
 
 ---
 
-## Generated Dataset
+## Incremental Pipeline
 
-| Table | Rows | Notes |
+The pipeline runs daily, generating and processing one date partition at a time.
+
+| Generator | Schedule | Logic |
 |---|---|---|
-| dim_category | 60 | 10 parents, 50 sub-categories |
-| dim_product | ~120 | 100 base + ~20 SCD2 versions |
-| dim_customer | ~1,050 | 1,000 base + 50 SCD2 versions |
-| fact_orders | ~9,985 | All events combined |
-| fact_order_items | ~18,029 | ~1.8 items per order average |
-| fact_payments | ~12,934 | Includes retry attempts |
-| fact_shipments | ~12,161 | One record per item per order |
-| fact_refunds | ~895 | ~10% of delivered orders |
-| fact_customer_segment_snapshot | ~29,451 | Monthly RFM snapshots |
+| dim_category | One-time seed | Skipped if warehouse already has categories |
+| dim_product | Weekly (Mondays) | 100 products on first run, 3-5 weekly thereafter |
+| dim_customer | Daily | 5-15 new customers per day |
+| fact_orders | Daily | 10-20% of active customer base |
+| fact_shipments | Daily | Queries warehouse for processing/shipped orders |
+| fact_refunds | Daily | Queries warehouse for delivered orders in last 3 days |
+
+**Date detection** — Each layer detects its partition date by scanning the latest folder in its data lake directory, ensuring the pipeline always processes the correct date regardless of when it runs.
+
+---
+
+## Airflow DAG Chain
+
+Four chained DAGs run daily using `TriggerDagRunOperator`:
+
+```
+data_generator_dag (scheduled: 8 PM IST)
+    └── triggers → silver_etl_dag
+                      └── triggers → gold_etl_dag
+                                        └── triggers → warehouse_load_etl_dag
+```
+
+Only `data_generator_dag` has a schedule. The remaining three DAGs run with `schedule_interval=None` and are triggered automatically on success of the previous DAG.
 
 ---
 
@@ -191,10 +214,12 @@ cp .env.example .env
 # Also add AIRFLOW_UID=50000 for Airflow Docker setup
 ```
 
-### 5. Start PostgreSQL with Docker
+### 5. Start Airflow and all services
 ```bash
-docker compose up -d postgres
+docker compose up -d
 ```
+
+Wait for all containers to become healthy, then open `http://localhost:8080`.
 
 ### 6. Initialize the warehouse schema
 Run these scripts in DBeaver or psql in order:
@@ -203,54 +228,16 @@ warehouse/schema/create_tables.sql
 warehouse/schema/indexes.sql
 warehouse/schema/create_audit_schema.sql
 warehouse/seeds/dim_date_seed.sql
-warehouse/seeds/dim_exchange_rate_seed.py
 ```
 
-### 7. Generate the dataset
-```bash
-python -m data_generator.run_generator
-```
+### 7. Enable and trigger the pipeline
 
-This generates ~85K rows across 8 JSONL files in `data_lake/raw/`. Takes approximately 2 minutes.
+Enable `data_generator_dag` in the Airflow UI and trigger it manually for the first run. It will automatically:
+1. Seed exchange rates via Yahoo Finance
+2. Generate Bronze JSONL files for the current date partition
+3. Trigger `silver_etl_dag` → `gold_etl_dag` → `warehouse_load_etl_dag` in sequence
 
-### 8. Run Silver ETL
-```bash
-python -m etl.transform.silver.silver_dim_category
-python -m etl.transform.silver.silver_dim_product
-python -m etl.transform.silver.silver_dim_customer
-python -m etl.transform.silver.silver_fact_orders
-python -m etl.transform.silver.silver_fact_order_items
-python -m etl.transform.silver.silver_fact_payments
-python -m etl.transform.silver.silver_fact_shipments
-python -m etl.transform.silver.silver_fact_refunds
-```
-
-### 9. Run Gold ETL
-```bash
-python -m etl.transform.gold.gold_fact_orders
-python -m etl.transform.gold.gold_fact_order_items
-python -m etl.transform.gold.gold_fact_payments
-python -m etl.transform.gold.gold_fact_refunds
-python -m etl.transform.gold.gold_fact_customer_segment_snapshot
-```
-
-### 10. Load the warehouse
-```bash
-python -m etl.load.run_loader
-```
-This runs all 9 loaders in dependency order. Takes approximately 1 minute.
-
-### 11. Start Airflow
-```bash
-docker compose up -d
-```
-
-Wait for all containers to become healthy, then open `http://localhost:8080`.
-
-Enable and trigger DAGs in this order:
-1. `silver_etl_dag`
-2. `gold_etl_dag`
-3. `warehouse_load_dag`
+The full pipeline runs daily at 8 PM IST automatically after the initial setup.
 
 ---
 
@@ -279,7 +266,7 @@ See `warehouse/queries/business_questions.sql` for full queries.
 | 4 | Gold Layer ETL — Enrich & Convert | ✅ Complete |
 | 5 | Warehouse Load | ✅ Complete |
 | 6 | Airflow Orchestration | ✅ Complete |
-| 7 | Incremental Architecture Redesign | 🔄 In Progress |
+| 7 | Incremental Architecture Redesign | ✅ Complete |
 | 8 | Apache Spark ETL | ⏳ Upcoming |
 | 9 | Analytics & Dashboards | ⏳ Upcoming |
 | 10 | Documentation & Polish | ⏳ Upcoming |
@@ -307,6 +294,10 @@ ORDER BY started_at DESC;
 
 **Medallion Architecture** — Bronze/Silver/Gold separation ensures raw data is never modified. Each layer has a clear purpose and can be reprocessed independently.
 
+**Date-Partitioned Data Lake** — Each layer stores data in `YYYY-MM-DD/` partitions. This enables incremental processing, independent reprocessing of any date, and efficient reads without full scans.
+
+**Partition Date Detection** — Each reader (`read_bronze`, `read_silver`, `read_gold`) detects the latest partition by scanning the data lake directory. This decouples date logic from ETL code and works correctly regardless of when the pipeline runs.
+
 **Event-Driven Bronze Layer** — Raw JSONL files store events not states. `fact_orders.jsonl` contains `order_created`, `order_totals_updated`, `order_processing`, `order_shipped`, `order_cancelled` and `order_delivered` events separately — simulating real CDC (Change Data Capture) patterns.
 
 **SCD Type 2 Dimensions** — Both `dim_customer` and `dim_product` track historical changes. Customer location updates and product discontinuations are preserved as separate versions, enabling point-in-time analysis.
@@ -315,13 +306,13 @@ ORDER BY started_at DESC;
 
 **Surrogate Keys** — Generated by the warehouse loader at insert time using `GENERATED ALWAYS AS IDENTITY`. Business keys are preserved alongside surrogate keys for traceability. FK resolution (e.g. `parent_category_sk`, `customer_sk`) happens exclusively in the loader.
 
-**Centralized Bronze Reader** — `etl/extract/read_bronze.py` is the single entry point for all Bronze reads. Handles corrupt line skipping, timestamp parsing, and event_type filtering — DRY principle applied across all 8 Silver transforms.
+**Centralized Layer Readers** — `read_bronze`, `read_silver`, and `read_gold` are the single entry points for reads at each layer. Each handles partition path resolution, corrupt record handling (Bronze), type inference (Silver/Gold), and event_type filtering — DRY principle applied across all transforms.
+
+**UPSERT Loaders** — Fact tables with evolving state (`fact_orders`, `fact_shipments`, `fact_refunds`) use `ON CONFLICT DO UPDATE` to apply status changes incrementally. Append-only facts (`fact_order_items`, `fact_payments`) use `ON CONFLICT DO NOTHING`.
+
+**Chained DAG Orchestration** — Four separate DAGs connected via `TriggerDagRunOperator` provide independent scheduling, monitoring, and reprocessing per layer. Only the generator DAG has a schedule — downstream DAGs run on trigger only, allowing any layer to be rerun independently.
 
 **Audit-First Pipeline** — Every ETL script wraps execution in `PipelineAuditor` — tracking row counts, data quality check results, and rejected records directly to PostgreSQL in real time.
-
-**Gold Layer Enrichment** — Currency conversion (_inr columns) happens in Gold using daily exchange rates. `fact_customer_segment_snapshot` is built entirely in Gold via LTM RFM aggregation across 63 monthly snapshots. Dims and `fact_shipments` flow directly Silver → Loader.
-
-**Airflow Orchestration** — Three separate DAGs for Silver, Gold, and Warehouse Load provide independent scheduling, monitoring, and reprocessing per layer. Tasks within each DAG run in parallel where FK dependencies allow, matching the same dependency order as manual execution. All DAGs run inside Docker via the official Airflow 2.8.1 CeleryExecutor setup.
 
 ---
 
