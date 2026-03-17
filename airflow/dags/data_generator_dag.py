@@ -23,10 +23,10 @@ with DAG(
     catchup=False
 ) as dag:
     
-    task_exchange_rate = PythonOperator(
-        task_id="seed_exchange_rates",
-        python_callable=run_exchange_rate_seed
-    )
+    # task_exchange_rate = PythonOperator(
+    #     task_id="seed_exchange_rates",
+    #     python_callable=run_exchange_rate_seed
+    # )
     
     task_generator = PythonOperator(
         task_id="run_generator",
@@ -39,5 +39,5 @@ with DAG(
         wait_for_completion=False
     )
 
-    task_exchange_rate >> task_generator
+    # task_exchange_rate >> task_generator
     task_generator >> trigger_silver

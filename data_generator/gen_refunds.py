@@ -35,12 +35,13 @@ def generate_refunds(conn, generation_date):
         FROM dw.fact_orders fo
         JOIN dw.fact_order_items foi ON fo.order_sk = foi.order_sk
         WHERE fo.order_status = 'delivered'
-        AND fo.order_last_updated_at >= NOW() - INTERVAL '3 days'
-        AND fo.order_id NOT IN (SELECT order_id FROM dw.fact_refunds)
+            AND fo.order_last_updated_at >= %(gen_date)s::date - INTERVAL '3 days'
+            AND fo.order_last_updated_at < %(gen_date)s::date + INTERVAL '1 day'
+            AND fo.order_id NOT IN (SELECT order_id FROM dw.fact_refunds)
     """
 
     with conn.cursor() as cur:
-        cur.execute(sql)
+        cur.execute(sql, {"gen_date": generation_date.isoformat()})
         delivered_rows = cur.fetchall()
     
     # Group items by order_id
