@@ -37,7 +37,7 @@ def generate_refunds(conn, generation_date):
         WHERE fo.order_status = 'delivered'
             AND fo.order_last_updated_at >= %(gen_date)s::date - INTERVAL '3 days'
             AND fo.order_last_updated_at < %(gen_date)s::date + INTERVAL '1 day'
-            AND fo.order_id NOT IN (SELECT order_id FROM dw.fact_refunds)
+            AND fo.order_id NOT IN (SELECT order_id FROM dw.fact_refunds fr JOIN dw.fact_orders fo ON fr.order_sk = fo.order_sk)
     """
 
     with conn.cursor() as cur:
