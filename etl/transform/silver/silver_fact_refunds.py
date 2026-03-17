@@ -64,7 +64,7 @@ def run():
         # STEP 2: Deduplicate
         # ------------------------------------------------------
         before_dedup = rows_read
-        df = df.drop_duplicates(subset=["order_item_id", "refund_id"], keep="first")
+        df = df.sort_values("initiated_at").drop_duplicates(subset=["order_item_id", "refund_id"], keep="last")
         after_dedup = len(df)
 
         dupes_dropped = before_dedup - after_dedup
@@ -97,7 +97,7 @@ def run():
         status_criteria_mask = (
             (df["refund_status"] == "processed") & (df["processed_at"].isna())
         ) | (
-            (df["refund_status"] != "processed") & (df["processed_at"].notna())
+            (~df["refund_status"].isin(["processed", "rejected"])) & (df["processed_at"].notna())
         )
 
         reject_mask = null_mask | status_mask | amount_mask | quantity_mask | date_range_mask | status_criteria_mask
