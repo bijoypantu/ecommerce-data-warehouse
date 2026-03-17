@@ -174,7 +174,7 @@ def generate_refunds(conn, generation_date):
 
         status = random.choices(
             ["processed", "rejected"],
-            weights=[0.7, 0.3], k=1
+            weights=[0.70, 0.30], k=1
         )[0]
 
         rows.append({
@@ -183,7 +183,7 @@ def generate_refunds(conn, generation_date):
                 "order_item_id":      order_item_id,
                 "customer_id":        customer_id,
                 "initiated_at":       initiated_at,
-                "processed_at":       processed_at,
+                "processed_at":       processed_at if status == "processed" else None,
                 "refund_quantity":    refund_quantity,
                 "refund_amount":      refund_amount,
                 "refund_reason":      refund_reason,
