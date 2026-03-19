@@ -45,8 +45,8 @@ def run(conn):
             cust_versions = pd.DataFrame(cur.fetchall(), 
                 columns=["customer_id", "customer_sk", "effective_start", "effective_end"])
 
-        cust_versions["effective_start"] = cust_versions["effective_start"].dt.tz_localize(None)
-        cust_versions["effective_end"] = cust_versions["effective_end"].dt.tz_localize(None)
+        cust_versions["effective_start"] = pd.to_datetime(cust_versions["effective_start"], utc=True, errors="coerce").dt.tz_localize(None)
+        cust_versions["effective_end"] = pd.to_datetime(cust_versions["effective_end"], utc=True, errors="coerce").dt.tz_localize(None)
 
         order_customer_versions = segment_df.merge(
             cust_versions,
