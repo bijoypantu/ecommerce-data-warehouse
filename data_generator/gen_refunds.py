@@ -67,7 +67,7 @@ def generate_refunds(conn, generation_date):
 
     # Randomly select 10% of orders to refund
     all_order_ids  = list(items_by_order.keys())
-    num_refunds    = int(len(all_order_ids) * 0.10)
+    num_refunds    = int(len(all_order_ids) * 0.08)
     orders_to_refund = random.sample(all_order_ids, num_refunds)
 
     rows = []
