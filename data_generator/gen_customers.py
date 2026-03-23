@@ -127,15 +127,15 @@ def generate_customers(conn, generation_date):
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT customer_id, first_name, last_name, date_of_birth,
-                       email, mobile_no, gender, signup_timestamp, country
+                    email, mobile_no, gender, signup_timestamp, country
                 FROM dw.dim_customer
                 WHERE is_current = true
-                AND effective_start <= NOW() - INTERVAL '3 months'
-            """)
+                AND effective_start <= %(gen_date)s::date - INTERVAL '3 months'
+            """, {"gen_date": generation_date.isoformat()})
             eligible_customers = cur.fetchall()
 
         if eligible_customers:
-            num_to_update = random.randint(1, 2)
+            num_to_update = random.randint(1, 3)
             customers_to_update = random.sample(
                 eligible_customers,
                 min(num_to_update, len(eligible_customers))
