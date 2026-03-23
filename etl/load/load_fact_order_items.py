@@ -78,6 +78,9 @@ def run(conn):
 
         item_df = item_df.merge(prod_sk_lookup, on="order_item_id", how="left")
 
+        logger.info(f"Null SKs: order_sk={item_df['order_sk'].isna().sum()}, customer_sk={item_df['customer_sk'].isna().sum()}, product_sk={item_df['product_sk'].isna().sum()}")
+        logger.info(f"dtypes: {item_df[['date_sk', 'quantity', 'unit_price_at_order', 'discount_amount', 'line_total_amount', 'line_total_amount_inr']].dtypes}")
+
         item_rows = list(
             item_df[[
                 "order_item_id", "order_sk", "product_sk",
