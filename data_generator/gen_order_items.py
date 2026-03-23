@@ -6,7 +6,7 @@
 
 import random
 import pandas as pd
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 from .config import (
     PRICE_RANGES,
@@ -48,7 +48,11 @@ def generate_order_items(conn, orders_df, rate_lookup):
 
             date_sk = date_to_sk(order_created_at.date())
             rate = rate_lookup.get((date_sk, currency_code), 1)
-            unit_price_inr = round(random.uniform(*PRICE_RANGES[category_name]), 2)
+
+            min_price, max_price = PRICE_RANGES[category_name]
+            mode_price = min_price + (max_price - min_price) * 0.2  # mode at 20% of range
+            unit_price_inr = round(random.triangular(min_price, max_price, mode_price), 2)
+            
             unit_price_at_order = round(float(unit_price_inr) / float(rate), 2)
 
             quantity = 0
