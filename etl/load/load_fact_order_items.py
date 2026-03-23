@@ -39,11 +39,11 @@ def run(conn):
         with conn.cursor() as cur:
             # Fetch the products SCD2 data
             cur.execute("""
-                SELECT product_id, product_sk, effective_start, effective_end
+                SELECT product_id, product_sk, product_status, effective_start, effective_end
                 FROM dw.dim_product
             """)
             prod_versions = pd.DataFrame(cur.fetchall(), 
-                columns=["product_id", "product_sk", "effective_start", "effective_end"])
+                columns=["product_id", "product_sk", "product_status", "effective_start", "effective_end"])
             
             # Fetch the order_sk and customer_sk
             cur.execute("""
@@ -63,8 +63,8 @@ def run(conn):
             how="left"
         )
 
-
         valid_prod_version_mask = (
+            (item_prod_versions["product_status"] == "active") &
             (item_prod_versions["order_created_at"] >= item_prod_versions["effective_start"]) &
             (
                 item_prod_versions["effective_end"].isna() |
