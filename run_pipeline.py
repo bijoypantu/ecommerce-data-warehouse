@@ -39,4 +39,4 @@ if __name__ == "__main__":
         run_pipeline()
 
         # small delay between runs (in seconds)
-        time.sleep(3)
+        time.sleep(2)

@@ -99,7 +99,15 @@ def generate_products(conn, categories_df, generation_date):
             FROM dw.dim_product dp
             JOIN dw.dim_category dc ON dp.category_sk = dc.category_sk
             WHERE dp.is_current = true
-            AND effective_start <= %(gen_date)s::date - INTERVAL '3 months'
+            AND dp.product_status = 'active'
+            AND dp.effective_start <= %(gen_date)s::date - INTERVAL '3 months'
+            AND dp.product_id NOT IN (
+                SELECT DISTINCT p.product_id 
+                FROM dw.fact_order_items foi
+                JOIN dw.dim_product p ON foi.product_sk = p.product_sk
+                JOIN dw.fact_orders fo ON foi.order_sk = fo.order_sk
+                WHERE fo.order_status IN ('created', 'processing')
+            )
             """, {"gen_date": generation_date.isoformat()})
         eligible_products = cur.fetchall()
 
