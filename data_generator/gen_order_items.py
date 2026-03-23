@@ -30,7 +30,7 @@ def generate_order_items(conn, orders_df, rate_lookup):
             SELECT dp.product_id, dc.category_name
             FROM dw.dim_product dp
             JOIN dw.dim_category dc ON dp.category_sk = dc.category_sk
-            WHERE dp.is_current = true
+            WHERE dp.is_current = true and product_status = 'active'
         """)
         active_products = cur.fetchall()
 
