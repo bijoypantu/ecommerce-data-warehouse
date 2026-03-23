@@ -8,7 +8,7 @@
 
 import random
 import pandas as pd
-from datetime import date, datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta
 
 from etl.utils.logger import get_logger
 
@@ -25,7 +25,7 @@ def generate_orders(conn, generation_date):
         res = {row[0]:row[1] for row in cur.fetchall()}
 
     if not res:
-        logger.info("  No customers in warehouse yet — skipping order generation")
+        logger.info("No customers in warehouse yet — skipping order generation")
         return pd.DataFrame()
     
     print("\n[fact_orders] Generating orders...")
@@ -37,7 +37,7 @@ def generate_orders(conn, generation_date):
         cur.execute("""SELECT COUNT(DISTINCT customer_id) FROM dw.dim_customer""")
         total_customers = cur.fetchone()[0]
     
-    daily_rate = random.uniform(0.10, 0.20)
+    daily_rate = random.uniform(0.10, 0.15)
     num_orders = max(random.randint(5, 10), int(total_customers * daily_rate))
     
     with conn.cursor() as cur:
