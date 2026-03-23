@@ -30,7 +30,7 @@ def generate_products(conn, categories_df, generation_date):
 
     sub_categories = list(zip(categories_df["category_id"], categories_df["category_name"]))
     # ----------------------------------------------------------
-    # Get current max customer number from warehouse
+    # Get current max product number from warehouse
     # so new IDs continue from where we left off
     # ----------------------------------------------------------
     with conn.cursor() as cur:
@@ -51,7 +51,7 @@ def generate_products(conn, categories_df, generation_date):
     rows = []
 
     # ----------------------------------------------------------
-    # PASS 1: Generate 2-5 active products
+    # PASS 1: Generate 3-5 active products
     # ----------------------------------------------------------
     for i in range(start_index, start_index + num_products):
         product_id   = f"PROD-{i:05d}"
@@ -99,8 +99,8 @@ def generate_products(conn, categories_df, generation_date):
             FROM dw.dim_product dp
             JOIN dw.dim_category dc ON dp.category_sk = dc.category_sk
             WHERE dp.is_current = true
-            AND dp.effective_start <= NOW() - INTERVAL '6 months'
-        """)
+            AND effective_start <= %(gen_date)s::date - INTERVAL '3 months'
+            """, {"gen_date": generation_date.isoformat()})
         eligible_products = cur.fetchall()
 
     if eligible_products:
