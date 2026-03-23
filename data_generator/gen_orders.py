@@ -38,7 +38,7 @@ def generate_orders(conn, generation_date):
         total_customers = cur.fetchone()[0]
     
     daily_rate = random.uniform(0.10, 0.20)
-    num_orders = max(random.randint(5, 10), int(total_customers * daily_rate))
+    num_orders = max(10, int(total_customers * daily_rate))
     
     with conn.cursor() as cur:
         cur.execute("SELECT MAX(CAST(SUBSTRING(order_id FROM 6) AS INTEGER)) FROM dw.fact_orders")
