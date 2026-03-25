@@ -37,8 +37,8 @@ def generate_orders(conn, generation_date):
         cur.execute("""SELECT COUNT(DISTINCT customer_id) FROM dw.dim_customer""")
         total_customers = cur.fetchone()[0]
     
-    daily_rate = random.uniform(0.10, 0.15)
-    num_orders = max(random.randint(5, 10), int(total_customers * daily_rate))
+    daily_rate = random.uniform(0.05, 0.08)
+    num_orders = min(150, int(total_customers * daily_rate))
     
     with conn.cursor() as cur:
         cur.execute("SELECT MAX(CAST(SUBSTRING(order_id FROM 6) AS INTEGER)) FROM dw.fact_orders")

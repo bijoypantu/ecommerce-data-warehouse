@@ -22,21 +22,24 @@ PIPELINE_STEPS = [
     "python -m etl.load.run_loader"
 ]
 
-def run_pipeline():
+def run_pipeline(run_number):
     for step in PIPELINE_STEPS:
         start = time.time()
         print(f"Running: {step}")
+        
         result = subprocess.run(step, shell=True)
+        
         print(f"Completed in {time.time() - start:.1f}s")
 
         if result.returncode != 0:
-            raise Exception(f"Pipeline failed at step {step} on run {i+1}")
+            raise Exception(f"Pipeline failed at step {step} on run {run_number}")
+        
+        time.sleep(1)
 
 if __name__ == "__main__":
-    for i in range(365):
+    for i in range(10):
         print(f"\n===== RUN {i+1} =====\n")
         
-        run_pipeline()
+        run_pipeline(i+1)
 
-        # small delay between runs (in seconds)
-        time.sleep(2)
+        time.sleep(1)
