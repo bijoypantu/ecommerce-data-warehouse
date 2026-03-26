@@ -46,7 +46,7 @@ def generate_customers(conn, generation_date):
     # ----------------------------------------------------------
     # PASS 1 — Generate 5-15 new customers for today
     # ----------------------------------------------------------
-    num_customers = random.randint(5, 15)
+    num_customers = random.randint(1, 5)
 
     for i in range(start_index, start_index + num_customers):
         customer_id = f"CUST-{i:05d}"
