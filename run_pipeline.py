@@ -37,9 +37,9 @@ def run_pipeline(run_number):
         time.sleep(1)
 
 if __name__ == "__main__":
-    for i in range(10):
+    for i in range(363):
         print(f"\n===== RUN {i+1} =====\n")
         
         run_pipeline(i+1)
 
-        time.sleep(1)
+        time.sleep(2)

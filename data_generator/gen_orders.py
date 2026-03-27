@@ -8,7 +8,7 @@
 
 import random
 import pandas as pd
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 
 from etl.utils.logger import get_logger
 
@@ -34,11 +34,44 @@ def generate_orders(conn, generation_date):
     ingested_at = datetime.now(timezone.utc).isoformat()
 
     with conn.cursor() as cur:
-        cur.execute("""SELECT COUNT(DISTINCT customer_id) FROM dw.dim_customer""")
+        cur.execute("SELECT COUNT(DISTINCT customer_id) FROM dw.dim_customer")
         total_customers = cur.fetchone()[0]
-    
-    daily_rate = random.uniform(0.03, 0.06)
-    num_orders = min(random.randint(100, 200), int(total_customers * daily_rate))
+
+    today = generation_date
+
+    # 1. Base daily order rate
+    base_rate = random.gauss(0.04, 0.008)   # centered around 4%
+    base_rate = max(0.02, min(0.06, base_rate))  # clamp to 2%-6%
+
+    # 2. Day-of-week effect
+    weekday_factors = {
+        0: 0.95,  # Monday
+        1: 1.00,  # Tuesday
+        2: 1.02,  # Wednesday
+        3: 1.05,  # Thursday
+        4: 1.10,  # Friday
+        5: 1.18,  # Saturday
+        6: 1.12,  # Sunday
+    }
+    weekday_factor = weekday_factors[today.weekday()]
+
+    # 3. Seasonal/month effect
+    if today.month in (10, 12):
+        seasonal_factor = 1.20
+    elif today.month in (6, 7):
+        seasonal_factor = 1.08
+    else:
+        seasonal_factor = 1.00
+
+    # 4. Small random daily noise
+    noise_factor = random.uniform(0.97, 1.03)
+
+    # 5. Final expected orders
+    adjusted_rate = base_rate * weekday_factor * seasonal_factor * noise_factor
+    estimated_orders = int(total_customers * adjusted_rate)
+
+    # 6. Keep result in a sensible range
+    num_orders = min(399, max(179, estimated_orders))
     
     with conn.cursor() as cur:
         cur.execute("SELECT MAX(CAST(SUBSTRING(order_id FROM 5) AS INTEGER)) FROM dw.fact_orders")
