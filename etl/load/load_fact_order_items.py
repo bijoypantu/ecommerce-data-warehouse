@@ -38,18 +38,22 @@ def run(conn):
         # Query all product versions and orders sk's
         with conn.cursor() as cur:
             # Fetch the products SCD2 data
+            product_ids = item_df["product_id"]
             cur.execute("""
                 SELECT product_id, product_sk, product_status, effective_start, effective_end
                 FROM dw.dim_product
-            """)
+                WHERE product_id IN %s
+            """, (tuple(product_ids),))
             prod_versions = pd.DataFrame(cur.fetchall(), 
                 columns=["product_id", "product_sk", "product_status", "effective_start", "effective_end"])
             
             # Fetch the order_sk and customer_sk
+            order_ids = item_df["order_id"]
             cur.execute("""
                 SELECT order_id, order_sk, customer_sk, order_created_at
                 FROM dw.fact_orders
-            """)
+                WHERE order_id IN %s
+            """, (tuple(order_ids),))
             ord_lookup = {row[0]: (row[1], row[2], row[3]) for row in cur.fetchall()}
 
         item_df["order_sk"] = item_df["order_id"].map(lambda x: ord_lookup[x][0])
