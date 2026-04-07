@@ -36,8 +36,10 @@ def run(conn):
         # ------------------------------------------------------
 
         # Query order_sk and customer_sk for each order_id
+        order_ids = pay_df["order_id"]
         with conn.cursor() as cur:
-            cur.execute("""SELECT order_id, order_sk, customer_sk FROM dw.fact_orders""")
+            cur.execute("""SELECT order_id, order_sk, customer_sk FROM dw.fact_orders
+                        WHERE order_id IN %s""", (tuple(order_ids),))
             ord_lookup = {row[0]: (row[1], row[2]) for row in cur.fetchall()}
 
         pay_df["order_sk"] = pay_df["order_id"].map(lambda x: ord_lookup[x][0])
