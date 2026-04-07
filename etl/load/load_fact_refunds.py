@@ -36,8 +36,10 @@ def run(conn):
         # ------------------------------------------------------
 
         # Query order_item_sk, order_sk and customer_sk for each order_item_id
+        order_item_ids = ref_df["order_item_id"]
         with conn.cursor() as cur:
-            cur.execute("""SELECT order_item_id, order_item_sk, order_sk, customer_sk FROM dw.fact_order_items""")
+            cur.execute("""SELECT order_item_id, order_item_sk, order_sk, customer_sk FROM dw.fact_order_items
+                        WHERE order_item_id IN %s""", (tuple(order_item_ids),))
             ord_lookup = {row[0]: (row[1], row[2], row[3]) for row in cur.fetchall()}
 
         ref_df["order_item_sk"] = ref_df["order_item_id"].map(lambda x: ord_lookup[x][0])
