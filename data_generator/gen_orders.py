@@ -71,7 +71,7 @@ def generate_orders(conn, generation_date):
     estimated_orders = int(total_customers * adjusted_rate)
 
     # 6. Keep result in a sensible range
-    num_orders = min(399, max(179, estimated_orders))
+    num_orders = min(random.randint(300, 399), max(179, estimated_orders))
     
     with conn.cursor() as cur:
         cur.execute("SELECT MAX(CAST(SUBSTRING(order_id FROM 5) AS INTEGER)) FROM dw.fact_orders")

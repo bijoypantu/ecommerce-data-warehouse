@@ -26,5 +26,6 @@
             "username": "warehouse_user",
             "password": "warehouse_pass"
         }
-    ]
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

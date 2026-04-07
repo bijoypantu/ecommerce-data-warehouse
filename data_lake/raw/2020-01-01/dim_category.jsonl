@@ -1,0 +1,60 @@
+{"category_id": "CAT-00001", "category_name": "Electronics", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034663+00:00"}
+{"category_id": "CAT-00002", "category_name": "Fashion", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034681+00:00"}
+{"category_id": "CAT-00003", "category_name": "Footwear", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034685+00:00"}
+{"category_id": "CAT-00004", "category_name": "Home & Kitchen", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034687+00:00"}
+{"category_id": "CAT-00005", "category_name": "Home Appliances", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034689+00:00"}
+{"category_id": "CAT-00006", "category_name": "Beauty & Personal Care", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034691+00:00"}
+{"category_id": "CAT-00007", "category_name": "Sports & Fitness", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034693+00:00"}
+{"category_id": "CAT-00008", "category_name": "Books & Stationery", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034695+00:00"}
+{"category_id": "CAT-00009", "category_name": "Toys & Games", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034697+00:00"}
+{"category_id": "CAT-00010", "category_name": "Accessories", "parent_category_id": null, "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034699+00:00"}
+{"category_id": "CAT-00011", "category_name": "Smartphones", "parent_category_id": "CAT-00001", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034701+00:00"}
+{"category_id": "CAT-00012", "category_name": "Laptops", "parent_category_id": "CAT-00001", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034703+00:00"}
+{"category_id": "CAT-00013", "category_name": "Tablets", "parent_category_id": "CAT-00001", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034704+00:00"}
+{"category_id": "CAT-00014", "category_name": "Cameras", "parent_category_id": "CAT-00001", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034706+00:00"}
+{"category_id": "CAT-00015", "category_name": "Televisions", "parent_category_id": "CAT-00001", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034708+00:00"}
+{"category_id": "CAT-00016", "category_name": "Men's Clothing", "parent_category_id": "CAT-00002", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034709+00:00"}
+{"category_id": "CAT-00017", "category_name": "Women's Clothing", "parent_category_id": "CAT-00002", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034711+00:00"}
+{"category_id": "CAT-00018", "category_name": "Kid's Clothing", "parent_category_id": "CAT-00002", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034712+00:00"}
+{"category_id": "CAT-00019", "category_name": "Ethnic Wear", "parent_category_id": "CAT-00002", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034714+00:00"}
+{"category_id": "CAT-00020", "category_name": "Activewear", "parent_category_id": "CAT-00002", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034716+00:00"}
+{"category_id": "CAT-00021", "category_name": "Men's Footwear", "parent_category_id": "CAT-00003", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034718+00:00"}
+{"category_id": "CAT-00022", "category_name": "Women's Footwear", "parent_category_id": "CAT-00003", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034719+00:00"}
+{"category_id": "CAT-00023", "category_name": "Kid's Footwear", "parent_category_id": "CAT-00003", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034721+00:00"}
+{"category_id": "CAT-00024", "category_name": "Sports Shoes", "parent_category_id": "CAT-00003", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034723+00:00"}
+{"category_id": "CAT-00025", "category_name": "Sandals & Slippers", "parent_category_id": "CAT-00003", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034724+00:00"}
+{"category_id": "CAT-00026", "category_name": "Cookware", "parent_category_id": "CAT-00004", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034726+00:00"}
+{"category_id": "CAT-00027", "category_name": "Storage & Organisation", "parent_category_id": "CAT-00004", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034728+00:00"}
+{"category_id": "CAT-00028", "category_name": "Bedding", "parent_category_id": "CAT-00004", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034730+00:00"}
+{"category_id": "CAT-00029", "category_name": "Bathroom", "parent_category_id": "CAT-00004", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034731+00:00"}
+{"category_id": "CAT-00030", "category_name": "Dining", "parent_category_id": "CAT-00004", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034733+00:00"}
+{"category_id": "CAT-00031", "category_name": "Washing Machines", "parent_category_id": "CAT-00005", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034734+00:00"}
+{"category_id": "CAT-00032", "category_name": "Refrigerators", "parent_category_id": "CAT-00005", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034736+00:00"}
+{"category_id": "CAT-00033", "category_name": "Air Conditioners", "parent_category_id": "CAT-00005", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034737+00:00"}
+{"category_id": "CAT-00034", "category_name": "Microwaves", "parent_category_id": "CAT-00005", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034739+00:00"}
+{"category_id": "CAT-00035", "category_name": "Vacuum Cleaners", "parent_category_id": "CAT-00005", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034741+00:00"}
+{"category_id": "CAT-00036", "category_name": "Skincare", "parent_category_id": "CAT-00006", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034742+00:00"}
+{"category_id": "CAT-00037", "category_name": "Haircare", "parent_category_id": "CAT-00006", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034749+00:00"}
+{"category_id": "CAT-00038", "category_name": "Fragrances", "parent_category_id": "CAT-00006", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034751+00:00"}
+{"category_id": "CAT-00039", "category_name": "Men's Grooming", "parent_category_id": "CAT-00006", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034753+00:00"}
+{"category_id": "CAT-00040", "category_name": "Makeup", "parent_category_id": "CAT-00006", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034755+00:00"}
+{"category_id": "CAT-00041", "category_name": "Exercise Equipment", "parent_category_id": "CAT-00007", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034758+00:00"}
+{"category_id": "CAT-00042", "category_name": "Outdoor Sports", "parent_category_id": "CAT-00007", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034760+00:00"}
+{"category_id": "CAT-00043", "category_name": "Yoga & Meditation", "parent_category_id": "CAT-00007", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034762+00:00"}
+{"category_id": "CAT-00044", "category_name": "Cycling", "parent_category_id": "CAT-00007", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034763+00:00"}
+{"category_id": "CAT-00045", "category_name": "Swimming", "parent_category_id": "CAT-00007", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034765+00:00"}
+{"category_id": "CAT-00046", "category_name": "Fiction", "parent_category_id": "CAT-00008", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034767+00:00"}
+{"category_id": "CAT-00047", "category_name": "Non-Fiction", "parent_category_id": "CAT-00008", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034769+00:00"}
+{"category_id": "CAT-00048", "category_name": "Academic", "parent_category_id": "CAT-00008", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034770+00:00"}
+{"category_id": "CAT-00049", "category_name": "Office Supplies", "parent_category_id": "CAT-00008", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034772+00:00"}
+{"category_id": "CAT-00050", "category_name": "Art Supplies", "parent_category_id": "CAT-00008", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034774+00:00"}
+{"category_id": "CAT-00051", "category_name": "Board Games", "parent_category_id": "CAT-00009", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034775+00:00"}
+{"category_id": "CAT-00052", "category_name": "Action Figures", "parent_category_id": "CAT-00009", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034777+00:00"}
+{"category_id": "CAT-00053", "category_name": "Educational Toys", "parent_category_id": "CAT-00009", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034779+00:00"}
+{"category_id": "CAT-00054", "category_name": "Outdoor Toys", "parent_category_id": "CAT-00009", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034781+00:00"}
+{"category_id": "CAT-00055", "category_name": "Puzzles", "parent_category_id": "CAT-00009", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034783+00:00"}
+{"category_id": "CAT-00056", "category_name": "Bags & Luggage", "parent_category_id": "CAT-00010", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034784+00:00"}
+{"category_id": "CAT-00057", "category_name": "Watches", "parent_category_id": "CAT-00010", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034786+00:00"}
+{"category_id": "CAT-00058", "category_name": "Jewellery", "parent_category_id": "CAT-00010", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034787+00:00"}
+{"category_id": "CAT-00059", "category_name": "Sunglasses", "parent_category_id": "CAT-00010", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034789+00:00"}
+{"category_id": "CAT-00060", "category_name": "Wallets & Belts", "parent_category_id": "CAT-00010", "event_type": "created", "ingested_at": "2026-03-23T13:56:07.034790+00:00"}
